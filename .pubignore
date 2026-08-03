@@ -1,0 +1,27 @@
+.dart_tool/
+.git/
+.github/
+.idea/
+.vscode/
+build/
+coverage/
+third_party/
+
+# Development harnesses and their large fixture corpus are not consumer assets.
+benchmark/
+native_test/
+test/
+
+# Flutter example build state is unnecessary, but keep source example optional?
+example/.dart_tool/
+example/build/
+example/android/.gradle/
+example/ios/Pods/
+
+# Generated WebAssembly is published separately once the web backend ships.
+web/image_ffmpeg_module.mjs
+web/image_ffmpeg_module.wasm
+
+*.log
+.DS_Store
+pubspec.lock

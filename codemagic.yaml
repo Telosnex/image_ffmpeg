@@ -1,0 +1,94 @@
+definitions:
+  env: &env
+    flutter: stable
+    xcode: latest
+    java: 17
+  verify: &verify
+    name: Verify package and pinned artifacts
+    script: |
+      dart pub get
+      dart analyze
+      dart run tool/verify_native_artifacts.dart
+      dart test test/image_ffmpeg_test.dart
+
+workflows:
+  android-build:
+    name: Android native-assets build
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment: *env
+    triggering:
+      events: [push]
+    scripts:
+      - *verify
+      - name: Build Android app bundle
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > example/android/local.properties
+          cd example
+          flutter pub get
+          flutter build appbundle --release
+
+  ios-build:
+    name: iOS native-assets build
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment: *env
+    triggering:
+      events: [push]
+    scripts:
+      - *verify
+      - name: Build iOS device and simulator
+        script: |
+          cd example
+          flutter pub get
+          flutter build ios --release --no-codesign
+          flutter build ios --simulator --debug
+
+  macos-build:
+    name: macOS native-assets build
+    instance_type: mac_mini_m2
+    max_build_duration: 20
+    environment: *env
+    triggering:
+      events: [push]
+    scripts:
+      - *verify
+      - name: Build macOS
+        script: |
+          cd example
+          flutter pub get
+          flutter build macos --release
+
+  linux-build:
+    name: Linux native-assets build
+    instance_type: linux_x2
+    max_build_duration: 20
+    environment: *env
+    triggering:
+      events: [push]
+    scripts:
+      - name: Install native-assets linker
+        script: |
+          sudo apt-get update
+          sudo apt-get install -y lld
+      - *verify
+      - name: Build Linux
+        script: |
+          cd example
+          flutter pub get
+          flutter build linux --release
+
+  windows-build:
+    name: Windows native-assets build
+    instance_type: windows_x2
+    max_build_duration: 20
+    environment: *env
+    triggering:
+      events: [push]
+    scripts:
+      - *verify
+      - name: Build Windows
+        script: |
+          cd example
+          flutter pub get
+          flutter build windows --release

@@ -1,0 +1,16 @@
+name: image_ffmpeg_native_test
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+# Uses the same pinned bundled artifact that production consumers receive.
+
+dependencies:
+  image_ffmpeg:
+    path: ..
+  image: ^4.5.4
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.28.0

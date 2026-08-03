@@ -1,0 +1,47 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>image_ffmpeg browser Wasm benchmark</title>
+<pre id="result">running</pre>
+<script type="module">
+  import createModule from '../web/image_ffmpeg_module.mjs';
+  import {createImageFfmpeg} from '../web/image_ffmpeg_loader.mjs';
+
+  const output = document.querySelector('#result');
+  try {
+    const encoded = new Uint8Array(
+      await (await fetch('./wallpaper.jpg')).arrayBuffer(),
+    );
+    const ffmpeg = await createImageFfmpeg(createModule);
+    for (let i = 0; i < 3; i++) ffmpeg.decodeImage(encoded, 96, 96);
+    // Yield between batches so headless Chrome's virtual-time driver observes
+    // wall-clock progress instead of treating the whole module task atomically.
+    const yieldToBrowser = () => new Promise((resolve) => setTimeout(resolve));
+    await yieldToBrowser();
+
+    // Measure batches: some headless/browser configurations deliberately
+    // reduce performance.now() precision, but a ten-decode batch remains large
+    // enough to report usefully even at 100 ms timer granularity.
+    const runs = [];
+    let image;
+    for (let batch = 0; batch < 5; batch++) {
+      const start = performance.now();
+      for (let i = 0; i < 10; i++) {
+        image = ffmpeg.decodeImage(encoded, 96, 96);
+      }
+      await yieldToBrowser();
+      runs.push((performance.now() - start) / 10);
+    }
+    runs.sort((left, right) => left - right);
+    const mean = runs.reduce((sum, value) => sum + value, 0) / runs.length;
+    output.textContent = [
+      `Runtime: ${ffmpeg.buildInfo}`,
+      `Output: ${image.width}x${image.height}, ${image.bytes.length} RGBA bytes`,
+      `Runs (ms): ${runs.map((value) => value.toFixed(3)).join(', ')}`,
+      `Min (ms): ${runs[0].toFixed(3)}`,
+      `Median (ms): ${runs[Math.floor(runs.length / 2)].toFixed(3)}`,
+      `Mean (ms): ${mean.toFixed(3)}`,
+    ].join('\n');
+  } catch (error) {
+    output.textContent = `ERROR: ${error.stack ?? error}`;
+  }
+</script>
