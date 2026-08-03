@@ -8,6 +8,9 @@
   FFmpeg `master` snapshot, decoder-only libaom 3.12.1, and zlib 1.3.1, with
   constrained exports and dependency checks.
 - Decode static and animated WebP, returning the first animation frame.
+- Normalize deprecated full-range `YUVJ*` frames before scaling and explicitly
+  preserve JPEG color range, eliminating libswscale's deprecated-pixel-format
+  warning without suppressing diagnostics.
 - Add native FFI and browser WebAssembly backends behind one async API.
 - Connect the browser backend to a module Worker with request IDs, mapped
   errors, and transferable input/output buffers.

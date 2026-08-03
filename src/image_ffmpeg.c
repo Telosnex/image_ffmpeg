@@ -49,6 +49,50 @@ typedef struct image_ffmpeg_memory_input {
   size_t position;
 } image_ffmpeg_memory_input;
 
+// libswscale still accepts the legacy full-range YUVJ formats, but logs a
+// warning and internally rewrites them to their range-neutral equivalents.
+// Normalize before creating the context, then set the source range explicitly.
+static enum AVPixelFormat image_ffmpeg_normalize_source_format(
+    enum AVPixelFormat format, int *source_full_range) {
+  switch (format) {
+    case AV_PIX_FMT_YUVJ420P:
+      *source_full_range = 1;
+      return AV_PIX_FMT_YUV420P;
+    case AV_PIX_FMT_YUVJ422P:
+      *source_full_range = 1;
+      return AV_PIX_FMT_YUV422P;
+    case AV_PIX_FMT_YUVJ444P:
+      *source_full_range = 1;
+      return AV_PIX_FMT_YUV444P;
+    case AV_PIX_FMT_YUVJ440P:
+      *source_full_range = 1;
+      return AV_PIX_FMT_YUV440P;
+    case AV_PIX_FMT_YUVJ411P:
+      *source_full_range = 1;
+      return AV_PIX_FMT_YUV411P;
+    default:
+      return format;
+  }
+}
+
+static int image_ffmpeg_set_source_full_range(struct SwsContext *context) {
+  int *inverse_table;
+  int *table;
+  int source_range;
+  int destination_range;
+  int brightness;
+  int contrast;
+  int saturation;
+  if (sws_getColorspaceDetails(context, &inverse_table, &source_range, &table,
+                               &destination_range, &brightness, &contrast,
+                               &saturation) < 0) {
+    return -1;
+  }
+  return sws_setColorspaceDetails(context, inverse_table, 1, table,
+                                  destination_range, brightness, contrast,
+                                  saturation);
+}
+
 static int image_ffmpeg_read_memory(void *opaque, uint8_t *buffer,
                                    int buffer_size) {
   image_ffmpeg_memory_input *input = (image_ffmpeg_memory_input *)opaque;
@@ -888,11 +932,15 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba(
     goto cleanup;
   }
 
+  int source_full_range = frame->color_range == AVCOL_RANGE_JPEG;
+  enum AVPixelFormat source_format = image_ffmpeg_normalize_source_format(
+      (enum AVPixelFormat)frame->format, &source_full_range);
   scale_context = sws_getContext(
-      frame->width, frame->height, (enum AVPixelFormat)frame->format,
-      (int)destination_width, (int)destination_height, AV_PIX_FMT_RGBA,
-      SWS_AREA, NULL, NULL, NULL);
+      frame->width, frame->height, source_format, (int)destination_width,
+      (int)destination_height, AV_PIX_FMT_RGBA, SWS_AREA, NULL, NULL, NULL);
   if (scale_context == NULL ||
+      (source_full_range &&
+       image_ffmpeg_set_source_full_range(scale_context) < 0) ||
       sws_scale(scale_context, (const uint8_t *const *)frame->data,
                 frame->linesize, 0, frame->height, destination_data,
                 destination_linesize) != (int)destination_height) {
