@@ -10,7 +10,7 @@ import 'models.dart';
 /// Cross-platform entry point for the reduced FFmpeg build.
 ///
 /// The API is asynchronous on every platform. Native decoding runs on a helper
-/// isolate; browser decoding will run in a Web Worker. Keeping that distinction
+/// isolate; browser decoding runs in a Web Worker. Keeping that distinction
 /// below this class avoids platform-specific call sites.
 final class Ffmpeg {
   Ffmpeg._(this._backend);

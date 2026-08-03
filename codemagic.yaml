@@ -78,6 +78,27 @@ workflows:
           flutter pub get
           flutter build linux --release
 
+  web-build:
+    name: Flutter web Worker/Wasm build
+    instance_type: linux_x2
+    max_build_duration: 20
+    environment: *env
+    triggering:
+      events: [push]
+    scripts:
+      - *verify
+      - name: Test browser backend and build web example
+        script: |
+          dart test -p chrome test/image_ffmpeg_web_test.dart
+          dart test -p chrome -c dart2wasm test/image_ffmpeg_web_test.dart
+          cd example
+          flutter pub get
+          flutter build web
+          test -f build/web/assets/packages/image_ffmpeg/web/image_ffmpeg_worker.mjs
+          test -f build/web/assets/packages/image_ffmpeg/web/image_ffmpeg_loader.mjs
+          test -f build/web/assets/packages/image_ffmpeg/web/image_ffmpeg_module.mjs
+          test -f build/web/assets/packages/image_ffmpeg/web/image_ffmpeg_module.wasm
+
   windows-build:
     name: Windows native-assets build
     instance_type: windows_x2

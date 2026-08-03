@@ -8,8 +8,13 @@
   FFmpeg `master` snapshot, decoder-only libaom 3.12.1, and zlib 1.3.1, with
   constrained exports and dependency checks.
 - Decode static and animated WebP, returning the first animation frame.
-- Add native FFI and browser WebAssembly backend seams behind one async API.
-- Add an Emscripten linear-memory adapter and Web Worker protocol.
+- Add native FFI and browser WebAssembly backends behind one async API.
+- Connect the browser backend to a module Worker with request IDs, mapped
+  errors, and transferable input/output buffers.
+- Bundle the Worker, Emscripten adapter, generated JavaScript module, and Wasm
+  binary automatically in Flutter web applications; expose `FfmpegWeb.workerUri`
+  for plain-Dart/custom hosting.
+- Cover the browser backend in real Chrome under dart2js and Dart2Wasm.
 - Add FFmpeg vendoring and Wasm build scripts.
 - Implement byte-based image probing, first-frame decode, fit-within area
   scaling, and RGBA output through libavformat, libavcodec, and libswscale.

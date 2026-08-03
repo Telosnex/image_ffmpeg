@@ -1,8 +1,8 @@
 import {readFile} from 'node:fs/promises';
 import {performance} from 'node:perf_hooks';
 
-import createModule from '../web/image_ffmpeg_module.mjs';
-import {createImageFfmpeg} from '../web/image_ffmpeg_loader.mjs';
+import createModule from '../lib/web/image_ffmpeg_module.mjs';
+import {createImageFfmpeg} from '../lib/web/image_ffmpeg_loader.mjs';
 
 const defaultInput =
   '/Users/jpo/Documents/Telosnex/wallpaper/' +

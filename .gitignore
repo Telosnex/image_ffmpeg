@@ -35,8 +35,6 @@ migrate_working_dir/
 /third_party/ffmpeg/
 /third_party/aom/
 /third_party/zlib/
-/web/image_ffmpeg_module.mjs
-/web/image_ffmpeg_module.wasm
 
 # Nested benchmark/test package state.
 /benchmark/.dart_tool/

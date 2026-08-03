@@ -23,3 +23,15 @@ dev_dependencies:
   ffigen: ^20.1.1
   lints: ^6.0.0
   test: ^1.28.0
+
+# Ship the Worker, ABI adapter, and Emscripten module/Wasm with every Flutter
+# app that depends on this package. Flutter serves these at
+# assets/packages/image_ffmpeg/web/ inside the built web app, which is the
+# default location loaded by lib/src/backend/backend_web.dart. Non-Flutter
+# embedders serve lib/web/ themselves and override FfmpegWeb.workerUri.
+flutter:
+  assets:
+    - packages/image_ffmpeg/web/image_ffmpeg_worker.mjs
+    - packages/image_ffmpeg/web/image_ffmpeg_loader.mjs
+    - packages/image_ffmpeg/web/image_ffmpeg_module.mjs
+    - packages/image_ffmpeg/web/image_ffmpeg_module.wasm

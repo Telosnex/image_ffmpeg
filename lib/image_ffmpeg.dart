@@ -5,6 +5,7 @@
 library;
 
 export 'src/ffmpeg.dart' show Ffmpeg;
+export 'src/web_config.dart' show FfmpegWeb;
 export 'src/models.dart'
     show
         EncodedImage,

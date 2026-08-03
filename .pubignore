@@ -18,9 +18,8 @@ example/build/
 example/android/.gradle/
 example/ios/Pods/
 
-# Generated WebAssembly is published separately once the web backend ships.
-web/image_ffmpeg_module.mjs
-web/image_ffmpeg_module.wasm
+# The four lib/web runtime assets are intentionally published and bundled by
+# Flutter; do not exclude them here.
 
 *.log
 .DS_Store

@@ -19,9 +19,9 @@ and Windows. Each artifact contains the stable shim plus an exact August 3,
 2026 post-8.1 FFmpeg `master` snapshot, decoder-only libaom 3.12.1, and zlib
 1.3.1. The snapshot includes FFmpeg's native animated-WebP decoder and is
 pinned by commit rather than a moving branch. Consumers do not install FFmpeg,
-Homebrew, CocoaPods, or Gradle native dependencies. The same reduced codec
-profile compiles under WebAssembly; the Dart-to-Worker web adapter remains to
-be completed.
+Homebrew, CocoaPods, or Gradle native dependencies. Browsers use the same
+reduced codec profile through a bundled WebAssembly module running off the UI
+thread in a module Worker.
 
 ## API
 
@@ -114,6 +114,33 @@ file. Standalone `decodeImage` does not apply metadata orientation; fused
 `transcodeImage` applies EXIF orientation from JPEG, PNG, WebP, and TIFF when
 requested. AVIF grids and ICC color management are not currently applied.
 
+## Browser platforms
+
+Flutter web apps need no manual setup: the package declares its Worker,
+JavaScript adapter, Emscripten module, and Wasm binary as package assets.
+`flutter build web` places them under
+`assets/packages/image_ffmpeg/web/`, and `Ffmpeg.load()` resolves that path
+against the document base URI. This works with a non-root Flutter
+`--base-href` as well as at `/`.
+
+Plain Dart browser applications must serve the four sibling files from
+`lib/web/` and configure their URL before loading:
+
+```dart
+FfmpegWeb.workerUri = Uri.parse('/vendor/image_ffmpeg/image_ffmpeg_worker.mjs');
+final ffmpeg = await Ffmpeg.load();
+```
+
+Keep all four files together because the module Worker imports the loader and
+Emscripten module relatively, and the Emscripten module locates its Wasm binary
+relatively. They must be served over HTTP(S) with JavaScript/Wasm MIME types;
+`file://` does not provide a usable module-Worker origin.
+
+Both dart2js and Dart2Wasm/WasmGC application builds are covered by real-Chrome
+integration tests. Encoded inputs are copied into transferable buffers before
+dispatch so transferring them never detaches caller-owned Dart bytes. Encoded
+and RGBA results are transferred back rather than structured-cloned.
+
 ## Native platforms
 
 | Platform | Architectures | Minimum |
@@ -136,12 +163,14 @@ in [`native_artifacts/README.md`](native_artifacts/README.md).
 - `ffigen.yaml`: generates native `@Native` bindings from the stable header.
 - `lib/src/backend/backend_native.dart`: validates ABI, copies memory safely,
   and runs decode on a helper isolate.
-- `lib/src/backend/backend_web.dart`: web implementation seam selected with a
-  conditional import.
-- `web/image_ffmpeg_loader.mjs`: Emscripten linear-memory adapter for the same C
-  ABI.
-- `web/image_ffmpeg_worker.mjs`: request/response Worker protocol with
-  transferable output buffers.
+- `lib/src/backend/backend_web.dart`: Worker client selected with a conditional
+  import, including request routing, error mapping, and transferable buffers.
+- `lib/web/image_ffmpeg_loader.mjs`: Emscripten linear-memory adapter for the
+  same C ABI.
+- `lib/web/image_ffmpeg_worker.mjs`: request/response Worker protocol with
+  transferable input and output buffers.
+- `lib/web/image_ffmpeg_module.{mjs,wasm}`: committed browser runtime bundled as
+  Flutter package assets.
 - `tool/build_web.sh`: builds the current C shim to Wasm.
 - `tool/fetch_ffmpeg.sh`: fetches the pinned upstream source.
 - `native_test/`: linked-FFmpeg format conformance suite with viewable PNG
@@ -152,7 +181,9 @@ in [`native_artifacts/README.md`](native_artifacts/README.md).
 ```bash
 dart pub get
 dart run ffigen --config ffigen.yaml
-dart test
+dart test test/image_ffmpeg_test.dart
+dart test -p chrome test/image_ffmpeg_web_test.dart
+dart test -p chrome -c dart2wasm test/image_ffmpeg_web_test.dart
 dart analyze
 ```
 
@@ -208,15 +239,13 @@ matrix.
 
 ## Next milestones
 
-1. Connect `backend_web.dart` to the Worker and arrange package web-asset
-   bundling.
-2. Run identical fixture vectors against native and browser backends; compare
+1. Run the complete native fixture corpus against the browser backend; compare
    dimensions and pixel tolerances rather than assuming scaler bit identity.
-3. Add configurable resource limits, broader metadata support, and ICC color
+2. Add configurable resource limits, broader metadata support, and ICC color
    management.
-4. Add a persistent native helper isolate and reusable decoder contexts to
+3. Add a persistent native helper isolate and reusable decoder contexts to
    distinguish codec time from setup time in repeated workloads.
-5. Generalize the build/ABI generator into a reusable dual-target C-library
+4. Generalize the build/ABI generator into a reusable dual-target C-library
    template.
 
 See [doc/PORTING_C_LIBRARIES.md](doc/PORTING_C_LIBRARIES.md) for the reusable
