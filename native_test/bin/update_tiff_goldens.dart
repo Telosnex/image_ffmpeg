@@ -14,7 +14,6 @@ const _unsupported = {
   'dtm64float.tif',
   'dtm_test.tif',
   'float1x32.tif',
-  'float32.tif',
   'tca32int.tif',
 };
 
@@ -60,9 +59,9 @@ Future<void> main() async {
     await ffmpeg.dispose();
   }
 
-  if (sources.length != 18) {
+  if (sources.length != 19) {
     throw StateError(
-      'Expected 18 decodable TIFF fixtures, found ${sources.length}.',
+      'Expected 19 decodable TIFF fixtures, found ${sources.length}.',
     );
   }
 }

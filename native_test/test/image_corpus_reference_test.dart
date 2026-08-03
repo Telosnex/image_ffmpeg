@@ -13,7 +13,6 @@ const _tiffKnownGaps = {
   'dtm64float.tif',
   'dtm_test.tif',
   'float1x32.tif',
-  'float32.tif',
   'tca32int.tif',
 };
 
@@ -52,10 +51,7 @@ void main() {
   });
 
   group('APNG first-frame pixels', () {
-    for (final file in corpusFiles(
-      'png/apng',
-      '.png',
-    ).where((file) => !file.path.endsWith('test_apng2.png'))) {
+    for (final file in corpusFiles('png/apng', '.png')) {
       final name = file.uri.pathSegments.last;
       test(name, () async {
         await _compareSourceWithPngReference(

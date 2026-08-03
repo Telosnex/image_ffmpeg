@@ -3,7 +3,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 destination="$root/third_party/ffmpeg"
-revision=db69d06eeeab4f46da15030a80d539efb4503ca8
+revision=d3ad8a7fee6a647c6362e4a105d949282d50a98f
 
 if [[ -d "$destination/.git" ]]; then
   actual="$(git -C "$destination" rev-parse HEAD)"

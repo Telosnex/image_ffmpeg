@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:image_ffmpeg/image_ffmpeg.dart';
@@ -21,7 +22,24 @@ void main() {
     expect(ffmpeg.capabilities.canDecodeImage, isTrue);
     expect(ffmpeg.capabilities.canEncodeJpeg, isTrue);
     expect(ffmpeg.capabilities.canEncodePng, isTrue);
-    expect(ffmpeg.capabilities.buildInfo, contains('Lavc61'));
+    expect(ffmpeg.capabilities.buildInfo, contains('Lavc63.7.100'));
+  });
+
+  test('decodes the first animated WebP frame', () async {
+    final ffmpeg = await Ffmpeg.load();
+    addTearDown(ffmpeg.dispose);
+    final bytes = await File(
+      'test/fixtures/image_formats/sources/test_animated.webp',
+    ).readAsBytes();
+
+    final info = await ffmpeg.probeImage(bytes);
+    expect(info.format, ImageFormat.webp);
+    expect((info.width, info.height), (800, 800));
+    expect(info.hasAlpha, isTrue);
+
+    final image = await ffmpeg.decodeImage(bytes, maxWidth: 96, maxHeight: 96);
+    expect((image.width, image.height), (96, 96));
+    expect(image.bytes.length, 96 * 96 * 4);
   });
 
   test('probes supported image bytes when FFmpeg is linked', () async {

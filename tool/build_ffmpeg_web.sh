@@ -21,7 +21,7 @@ if [[ ! -f "$aom_prefix/lib/libaom.a" ]]; then
 fi
 export AOM_PREFIX="$aom_prefix"
 
-configuration_version=8
+configuration_version=9
 if [[ ! -f "$build_directory/.image_ffmpeg_config_version" ]] ||
     [[ "$(cat "$build_directory/.image_ffmpeg_config_version")" != "$configuration_version" ]]; then
   rm -rf "$build_directory"
@@ -64,13 +64,12 @@ if [[ ! -f ffbuild/config.mak ]]; then
     --disable-avdevice \
     --disable-avfilter \
     --enable-avformat \
-    --disable-postproc \
     --disable-swresample \
     --disable-everything \
     --enable-libaom \
-    --enable-decoder=mjpeg,png,apng,webp,gif,bmp,tiff,psd,libaom_av1 \
+    --enable-decoder=mjpeg,png,apng,webp,webp_anim,gif,bmp,tiff,psd,libaom_av1 \
     --enable-encoder=mjpeg,png \
-    --enable-demuxer=image_jpeg_pipe,image_png_pipe,apng,image_webp_pipe,image_gif_pipe,image_bmp_pipe,image_tiff_pipe,image_psd_pipe,ico,mov \
+    --enable-demuxer=image_jpeg_pipe,image_png_pipe,apng,image_webp_pipe,webp_anim,image_gif_pipe,image_bmp_pipe,image_tiff_pipe,image_psd_pipe,ico,mov \
     --enable-small \
     --extra-cflags='-O3 -sUSE_ZLIB=1' \
     --extra-ldflags=-sUSE_ZLIB=1

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
-ffmpeg_commit=db69d06eeeab4f46da15030a80d539efb4503ca8
+ffmpeg_commit=d3ad8a7fee6a647c6362e4a105d949282d50a98f
 aom_commit=10aece4157eb79315da205f39e19bf6ab3ee30d0
 zlib_commit=51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf
 

@@ -13,15 +13,6 @@ const _tiffProbeUnsupported = {
   'tca32int.tif',
 };
 
-const _tiffDecodeUnsupported = {'float32.tif'};
-
-const _animatedWebpUnsupported = {
-  'SteamEngine.webp',
-  'SteamEngine_lossy.webp',
-  'animated_lossy.webp',
-  'animated_transparency.webp',
-};
-
 const _orientationBySuffix = {
   '1': ImageOrientation.normal,
   '2': ImageOrientation.flipHorizontal,
@@ -118,19 +109,6 @@ void main() {
         final bytes = await file.readAsBytes();
         final info = await ffmpeg.probeImage(bytes);
         expect(info.format, ImageFormat.apng);
-        if (name == 'test_apng2.png') {
-          await expectLater(
-            ffmpeg.decodeImage(bytes),
-            throwsA(
-              isA<FfmpegException>().having(
-                (error) => error.status,
-                'status',
-                -3,
-              ),
-            ),
-          );
-          return;
-        }
         final decoded = await ffmpeg.decodeImage(bytes);
         expectValidRgba(decoded, width: info.width, height: info.height);
       });
@@ -155,19 +133,6 @@ void main() {
       final name = file.uri.pathSegments.last;
       test(name, () async {
         final bytes = await file.readAsBytes();
-        if (_animatedWebpUnsupported.contains(name)) {
-          await expectLater(
-            ffmpeg.decodeImage(bytes),
-            throwsA(
-              isA<FfmpegException>().having(
-                (error) => error.status,
-                'status',
-                -3,
-              ),
-            ),
-          );
-          return;
-        }
         final info = await ffmpeg.probeImage(bytes);
         expect(info.format, ImageFormat.webp);
         final decoded = await ffmpeg.decodeImage(bytes);
@@ -196,19 +161,6 @@ void main() {
         }
         final info = await ffmpeg.probeImage(bytes);
         expect(info.format, ImageFormat.tiff);
-        if (_tiffDecodeUnsupported.contains(name)) {
-          await expectLater(
-            ffmpeg.decodeImage(bytes),
-            throwsA(
-              isA<FfmpegException>().having(
-                (error) => error.status,
-                'status',
-                -3,
-              ),
-            ),
-          );
-          return;
-        }
         final decoded = await ffmpeg.decodeImage(bytes);
         expectValidRgba(decoded, width: info.width, height: info.height);
       });

@@ -379,6 +379,7 @@ static int image_ffmpeg_is_image_codec(AVFormatContext *format_context,
     case AV_CODEC_ID_PNG:
     case AV_CODEC_ID_APNG:
     case AV_CODEC_ID_WEBP:
+    case AV_CODEC_ID_WEBP_ANIM:
     case AV_CODEC_ID_GIF:
     case AV_CODEC_ID_BMP:
     case AV_CODEC_ID_TIFF:
@@ -409,6 +410,7 @@ static uint32_t image_ffmpeg_format_for_stream(
                  ? IMAGE_FFMPEG_IMAGE_FORMAT_APNG
                  : IMAGE_FFMPEG_IMAGE_FORMAT_PNG;
     case AV_CODEC_ID_WEBP:
+    case AV_CODEC_ID_WEBP_ANIM:
       return IMAGE_FFMPEG_IMAGE_FORMAT_WEBP;
     case AV_CODEC_ID_GIF:
       return IMAGE_FFMPEG_IMAGE_FORMAT_GIF;
@@ -457,6 +459,7 @@ static int32_t image_ffmpeg_alpha_hint(AVFormatContext *format_context,
       return 0;
     case AV_CODEC_ID_GIF:
     case AV_CODEC_ID_WEBP:
+    case AV_CODEC_ID_WEBP_ANIM:
       // Transparency can be signaled by a palette entry or container feature
       // that is not reflected in codecpar->format.
       return -1;
@@ -740,8 +743,8 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba(
   AVStream *stream = format_context->streams[stream_index];
   if (stream->codecpar->codec_id == AV_CODEC_ID_AV1 &&
       (stream->disposition & AV_DISPOSITION_DEPENDENT) != 0) {
-    // FFmpeg 7.1 exposes AVIF grid cells as dependent streams but does not
-    // compose the primary grid image. Reject rather than return one tile.
+    // FFmpeg exposes AVIF grid cells as dependent streams but does not compose
+    // the primary grid image. Reject rather than return one tile.
     status = IMAGE_FFMPEG_ERROR_UNSUPPORTED;
     goto cleanup;
   }

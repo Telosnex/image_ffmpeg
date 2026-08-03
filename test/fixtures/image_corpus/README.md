@@ -37,7 +37,7 @@ tool/update_image_corpus.sh [/path/to/image]
 ImageMagick, not by `image_ffmpeg`. They cover:
 
 - all 30 interlaced/non-interlaced PNGSuite baseline images;
-- the first frame of four APNGs.
+- the first frame of all five APNGs.
 
 The exact generator version is recorded in `GENERATOR.txt`. Regenerate them
 with:
@@ -72,13 +72,13 @@ dart test test/image_corpus_reference_test.dart
 
 The suite pins current behavior rather than silently dropping difficult files:
 
-- seven 32/64-bit TIFFs fail during probe;
-- one float32 TIFF probes but cannot be converted by libswscale;
-- `test_apng2.png` decodes to an unsupported pixel format;
-- four animated WebPs using `ANIM`/`ANMF` are rejected by FFmpeg 7.1.
+- seven 32/64-bit TIFFs fail during probe.
 
-All other TIFFs have exact reviewed PNG goldens; no ImageMagick interpretation
-is used as their correctness oracle.
+The newly supported float32 TIFF and all five APNGs have positive decode and
+pixel-regression coverage. The four animated WebP regressions using
+`ANIM`/`ANMF` are positive first-frame decode tests under the pinned post-8.1
+FFmpeg snapshot. All other TIFFs have exact reviewed PNG goldens; no
+ImageMagick interpretation is used as their correctness oracle.
 
 The 14 corrupt PNGSuite `x*` images and four historical `broken/` regressions
 have bounded no-crash/no-hang tests. FFmpeg is intentionally allowed either to

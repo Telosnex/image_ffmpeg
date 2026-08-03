@@ -4,6 +4,9 @@ import 'package:image_ffmpeg/image_ffmpeg.dart';
 import 'package:image/image.dart' as img;
 
 const _fixtureRoot = '../test/fixtures/image_formats';
+
+// verify_test_animated_webp.png is an independent ImageMagick reference and
+// is intentionally not overwritten by this package's decoder.
 const _fixtures = {
   'test.jpg': 'verify_test_jpg.png',
   'test.png': 'verify_test_png.png',
@@ -12,8 +15,6 @@ const _fixtures = {
   'test.bmp': 'verify_test_bmp.png',
   'test.tiff': 'verify_test_tiff.png',
   'test.ico': 'verify_test_ico.png',
-  // Animated WebP remains a known FFmpeg 7.1 decode gap; keep its fixture but
-  // generate the format golden from the independently decodable static file.
   'test.webp': 'verify_test_webp.png',
   'test.psd': 'verify_test_psd.png',
   'kimono.avif': 'verify_kimono_avif.png',

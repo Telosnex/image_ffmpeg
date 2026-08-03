@@ -4,10 +4,10 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 target="${1:-}"
 
-ffmpeg_commit=db69d06eeeab4f46da15030a80d539efb4503ca8
+ffmpeg_commit=d3ad8a7fee6a647c6362e4a105d949282d50a98f
 aom_commit=10aece4157eb79315da205f39e19bf6ab3ee30d0
 zlib_commit=51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf
-profile_version=6
+profile_version=7
 
 usage() {
   cat >&2 <<'EOF'
@@ -335,11 +335,11 @@ if [[ ! -f "$ffmpeg_build/.image_ffmpeg_complete" ]]; then
       --disable-runtime-cpudetect --disable-autodetect --disable-network \
       --disable-iconv --disable-bzlib --disable-lzma --enable-zlib \
       --disable-avdevice --disable-avfilter --enable-avformat \
-      --disable-postproc --disable-swresample --disable-everything \
+      --disable-swresample --disable-everything \
       --enable-libaom \
-      --enable-decoder=mjpeg,png,apng,webp,gif,bmp,tiff,psd,libaom_av1 \
+      --enable-decoder=mjpeg,png,apng,webp,webp_anim,gif,bmp,tiff,psd,libaom_av1 \
       --enable-encoder=mjpeg,png \
-      --enable-demuxer=image_jpeg_pipe,image_png_pipe,apng,image_webp_pipe,image_gif_pipe,image_bmp_pipe,image_tiff_pipe,image_psd_pipe,ico,mov \
+      --enable-demuxer=image_jpeg_pipe,image_png_pipe,apng,image_webp_pipe,webp_anim,image_gif_pipe,image_bmp_pipe,image_tiff_pipe,image_psd_pipe,ico,mov \
       --enable-small \
       --extra-cflags="$common_cflags -I$zlib_prefix/include" \
       --extra-ldflags="$common_ldflags -L$(dirname "$zlib_archive")"

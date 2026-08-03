@@ -121,6 +121,16 @@ const _cases = [
     hasAlpha: true,
   ),
   _ImageCase(
+    name: 'animated WebP',
+    source: 'test_animated.webp',
+    golden: 'verify_test_animated_webp.png',
+    format: ImageFormat.webp,
+    width: 800,
+    height: 800,
+    frameCount: 0,
+    hasAlpha: true,
+  ),
+  _ImageCase(
     name: 'PSD',
     source: 'test.psd',
     golden: 'verify_test_psd.png',
@@ -255,24 +265,6 @@ void main() {
       },
       skip: 'The reduced image-pipe demuxer reports nb_frames as zero.',
     );
-
-    test('animated WebP is a pinned FFmpeg 7.1 failure', () async {
-      final bytes = await File(
-        '$_fixtureRoot/sources/test_animated.webp',
-      ).readAsBytes();
-      await expectLater(
-        ffmpeg.probeImage(bytes),
-        throwsA(
-          isA<FfmpegException>().having((error) => error.status, 'status', -5),
-        ),
-      );
-      await expectLater(
-        ffmpeg.decodeImage(bytes),
-        throwsA(
-          isA<FfmpegException>().having((error) => error.status, 'status', -3),
-        ),
-      );
-    });
   });
 }
 

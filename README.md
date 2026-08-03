@@ -15,8 +15,10 @@ behind one Dart API:
 ```
 
 Native builds bundle SHA-256-pinned artifacts for Android, iOS, Linux, macOS,
-and Windows. Each artifact contains the stable shim plus a reduced FFmpeg 7.1.1,
-decoder-only libaom 3.12.1, and zlib 1.3.1. Consumers do not install FFmpeg,
+and Windows. Each artifact contains the stable shim plus an exact August 3,
+2026 post-8.1 FFmpeg `master` snapshot, decoder-only libaom 3.12.1, and zlib
+1.3.1. The snapshot includes FFmpeg's native animated-WebP decoder and is
+pinned by commit rather than a moving branch. Consumers do not install FFmpeg,
 Homebrew, CocoaPods, or Gradle native dependencies. The same reduced codec
 profile compiles under WebAssembly; the Dart-to-Worker web adapter remains to
 be completed.
@@ -82,15 +84,15 @@ orientation, crop, fit-within scaling, and encode, so a potentially large RGBA
 intermediate never crosses the FFI/Wasm boundary. That minimizes both calls and
 memory traffic.
 
-The image allow-list is JPEG, PNG/APNG, WebP, GIF, BMP, TIFF, AVIF, PSD,
-and ICO; the reduced Wasm build includes the same codecs. AVIF decoding uses a
-pinned, decoder-only libaom build and composes an auxiliary alpha image into
-RGBA when present. PSD returns the flattened composite image. ICO selects the
-largest embedded image (preferring higher bit depth for ties) and applies
-classic BMP-backed icons' 1-bit AND transparency mask. Other FFmpeg media
-inputs are rejected rather than silently treating a video as an image. Unknown
-bytes return `FfmpegException` status `-6`; recognized but unavailable formats
-and decode failures use distinct statuses.
+The image allow-list is JPEG, PNG/APNG, static and animated WebP, GIF, BMP,
+TIFF, AVIF, PSD, and ICO; the reduced Wasm build includes the same codecs.
+AVIF decoding uses a pinned, decoder-only libaom build and composes an
+auxiliary alpha image into RGBA when present. PSD returns the flattened
+composite image. ICO selects the largest embedded image (preferring higher bit
+depth for ties) and applies classic BMP-backed icons' 1-bit AND transparency
+mask. Other FFmpeg media inputs are rejected rather than silently treating a
+video as an image. Unknown bytes return `FfmpegException` status `-6`;
+recognized but unavailable formats and decode failures use distinct statuses.
 
 RGBA8888 output can be encoded as JPEG or PNG. JPEG quality ranges from 1 to
 100, supports either compact 4:2:0 or full-resolution 4:4:4 chroma, and
@@ -189,8 +191,8 @@ node benchmark/benchmark_wallpaper_wasm.mjs [optional/input.jpg]
 For a real browser run, link or copy the fixture to
 `benchmark/wallpaper.jpg`, serve the package root, and open
 `benchmark/benchmark_wallpaper_web.html` in Chrome. The final module is about
-2.4 MiB with FFmpeg 7.1.1, libaom 3.12.1, the nine decode formats listed
-above, and JPEG/PNG encoders.
+2.5 MiB with the pinned post-8.1 FFmpeg snapshot, libaom 3.12.1, the nine
+decode formats listed above, and JPEG/PNG encoders.
 
 Reproduce native artifacts from immutable source commits:
 

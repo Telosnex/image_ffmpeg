@@ -21,7 +21,7 @@ for source in "$source_root"/png/basi*.png "$source_root"/png/basn*.png; do
   magick "${source}[0]" -alpha on -depth 8 "PNG32:$reference_root/png/$name"
 done
 
-for name in test_apng.png test_apng1.png test_apng3.png test_apng4.png; do
+for name in test_apng.png test_apng1.png test_apng2.png test_apng3.png test_apng4.png; do
   magick "$source_root/png/apng/${name}[0]" \
     -alpha on -depth 8 "PNG32:$reference_root/apng/$name"
 done

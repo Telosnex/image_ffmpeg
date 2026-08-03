@@ -7,16 +7,24 @@ runtime.
 
 ## Source pins
 
-- FFmpeg `db69d06eeeab4f46da15030a80d539efb4503ca8` (`n7.1.1`)
+- FFmpeg `d3ad8a7fee6a647c6362e4a105d949282d50a98f` (August 3, 2026,
+  post-`n8.1` `master` snapshot)
 - libaom `10aece4157eb79315da205f39e19bf6ab3ee30d0` (`v3.12.1`)
 - zlib `51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf` (`v1.3.1`)
-- native build profile `6`
+- native build profile `7`
 
 The reduced profile contains only libavformat, libavcodec, libavutil and
 libswscale functionality needed by the image shim. It disables programs,
 networking, devices, filters, assembly, runtime CPU detection, GPL and nonfree
 components. libaom is decoder-only for AVIF. zlib supplies PNG compression.
-Both are statically included.
+Both are statically included. Profile 7 additionally enables FFmpeg's native
+animated-WebP demuxer/decoder and its required VP8 decoder.
+
+There was no tagged FFmpeg release containing animated-WebP support when this
+pin was selected. Using an unreleased snapshot carries more regression risk than
+a stable release, so the branch name is never consumed at build time: every
+build requires the exact commit above, and the full image corpus is run against
+the resulting bytes.
 
 Artifacts expose only the versioned `image_ffmpeg_*` shim ABI. Upstream symbols
 are hidden with an exported-symbol list, ELF version script, or Windows module
@@ -26,17 +34,17 @@ definition. Licenses and notices are under `licenses/`.
 
 | Target | Minimum | SHA-256 |
 |---|---|---|
-| Android armv7 | API 24 | `7d7cb790cd2ae13cd2a3b4015a51f8a8c4dfc0f7402d4208b822ab5dce31b4ac` |
-| Android arm64 | API 24 | `c84a48e61eeb0b42fe2471fcf0b53abebae6e0144e25819c442565a1a63c28e3` |
-| Android x64 | API 24 | `a1cca5cda0296b1feb535375cb73d330a482c6f629fb3e55ad1d2aa7b6182ab6` |
-| iOS arm64 device | iOS 13 | `042258845f6dc4c40ab43e28364884b50b3259223560cf4393978d6b6a6b61bc` |
-| iOS arm64 simulator | iOS 14 | `98ce5ebd6a31ca12cf62f8868c38735d084ead52a4e93bbf1a7e50fb4fdb35b4` |
-| iOS x64 simulator | iOS 13 | `73c0ac448acd16562864769dfc75d2859aed70d6a381ca1afcf87c6dba2502c6` |
-| Linux arm64 | glibc 2.31 | `30008a5b2606d572c6c55aa2a1463482a8f95856bfade9026b6af11e77c48772` |
-| Linux x64 | glibc 2.31 | `ebfdb864af1510e20a67d77972ce492cc9525c548dec7b2571cded80e78130f6` |
-| macOS arm64 | macOS 12 | `d5cf227dabcc3abab0e02842e33314c0d727befda462e2567bb0df8bda1c3cad` |
-| macOS x64 | macOS 12 | `106b395f5258c06956819979d92676346405437467c9866c05f87cd7f3399351` |
-| Windows x64 | Windows 10 | `99b9f6a1b29b879135e11d4f8f88dc85af29f5ceebb8bbbe38923d120a0c244f` |
+| Android armv7 | API 24 | `f220fd67e0a332e0721583f6da1f5d35f8eb30a0fce1c31a30fca8326e09d3d8` |
+| Android arm64 | API 24 | `1caf289b9d0543c9527c7b7b7cd8ac2247e05974c3aad8ca312d1dd74f3a7670` |
+| Android x64 | API 24 | `979376226cb6d2011f517b13f5e6e22aa2c3ec13ec47e70856213071b607cdc2` |
+| iOS arm64 device | iOS 13 | `4d6f62032f3e0bee8c701b45981ab087c8b9aff95b5a2dbed19b6b97cc8ff299` |
+| iOS arm64 simulator | iOS 14 | `46e2e9f60f1c232a7081244199f168a746f172ae167c6c446208355711f54909` |
+| iOS x64 simulator | iOS 13 | `657eb78db8bfca922c265bbf9b2e28401ff30e4196516297dde3c86f6b00cde1` |
+| Linux arm64 | glibc 2.31 | `f663e670b3ef1644c0b3958928cf5ae0bf13a86f5be2ca5328719a8e734c0efe` |
+| Linux x64 | glibc 2.31 | `d2767792c0153373334dfc0ce9cc10558eb77e395691ae50929381184e3ccfea` |
+| macOS arm64 | macOS 12 | `0b5ef80ca191bc939634be8fbc1e6c5c03a9d02d9eea894e04715b926a09a64f` |
+| macOS x64 | macOS 12 | `2f09368cb8e6bcd7b65a1d3b9fac149f3425c23b5e39a7f500c37e5e8bd76ebd` |
+| Windows x64 | Windows 10 | `3890c5ab69875b38aa8d20154cde415c392d383eb71628a7a073af86c0d3e58a` |
 
 Unsupported target tuples fail in the build hook rather than silently shipping
 an ABI scaffold without FFmpeg.

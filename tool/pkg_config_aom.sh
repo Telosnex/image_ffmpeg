@@ -13,13 +13,13 @@ fi
 
 is_aom_query=false
 for argument in "$@"; do
-  [[ "$argument" == aom ]] && is_aom_query=true
+  [[ "$argument" == aom || "$argument" == aom\ * ]] && is_aom_query=true
 done
 $is_aom_query || exit 1
 
 for argument in "$@"; do
   case "$argument" in
-    --exists|--print-errors|--static|aom|'>'|'>='|[0-9]*) ;;
+    --exists|--print-errors|--static|aom|aom\ *|'>'|'>='|[0-9]*) ;;
     --cflags|--cflags-only-I)
       echo "-I$AOM_PREFIX/include"
       exit 0
