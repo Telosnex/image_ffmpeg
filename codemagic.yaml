@@ -53,6 +53,8 @@ workflows:
       events: [push]
     scripts:
       - *verify
+      - name: Test Safari browser backend
+        script: dart test -p safari test/image_ffmpeg_web_test.dart
       - name: Build macOS
         script: |
           cd example

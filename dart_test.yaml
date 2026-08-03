@@ -1,0 +1,9 @@
+# Safari's executable accepts local files but not arbitrary URLs. package:test
+# therefore generates a redirect.html, which modern Safari refuses to load
+# without an interactive confirmation. The wrapper extracts the loopback URL
+# and opens that directly through Launch Services.
+override_platforms:
+  safari:
+    settings:
+      executable: /bin/bash
+      arguments: tool/safari_test_launcher.sh

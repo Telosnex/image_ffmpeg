@@ -136,10 +136,11 @@ Emscripten module relatively, and the Emscripten module locates its Wasm binary
 relatively. They must be served over HTTP(S) with JavaScript/Wasm MIME types;
 `file://` does not provide a usable module-Worker origin.
 
-Both dart2js and Dart2Wasm/WasmGC application builds are covered by real-Chrome
-integration tests. Encoded inputs are copied into transferable buffers before
-dispatch so transferring them never detaches caller-owned Dart bytes. Encoded
-and RGBA results are transferred back rather than structured-cloned.
+The dart2js application build is covered by real Chrome and Safari integration
+tests; Dart2Wasm/WasmGC is covered in Chrome because `package:test` currently
+runs Safari with dart2js. Encoded inputs are copied into transferable buffers
+before dispatch so transferring them never detaches caller-owned Dart bytes.
+Encoded and RGBA results are transferred back rather than structured-cloned.
 
 ## Native platforms
 
@@ -184,8 +185,15 @@ dart run ffigen --config ffigen.yaml
 dart test test/image_ffmpeg_test.dart
 dart test -p chrome test/image_ffmpeg_web_test.dart
 dart test -p chrome -c dart2wasm test/image_ffmpeg_web_test.dart
+dart test -p safari test/image_ffmpeg_web_test.dart # macOS only
 dart analyze
 ```
+
+`dart_test.yaml` routes Safari through `tool/safari_test_launcher.sh`. The
+wrapper extracts `package:test`'s loopback manager URL and sends the HTTP URL to
+Safari through Launch Services, avoiding Safari's interactive **Confirm the
+file to load** dialog for the temporary `redirect.html`. It remains alive for
+the suite and closes only its test-manager tab afterward.
 
 Run the native format corpus against the same pinned artifact shipped to
 consumers:

@@ -18,6 +18,8 @@
   binary automatically in Flutter web applications; expose `FfmpegWeb.workerUri`
   for plain-Dart/custom hosting.
 - Cover the browser backend in real Chrome under dart2js and Dart2Wasm.
+- Add unattended real-Safari dart2js coverage with a package:test launcher that
+  bypasses Safari's local-file confirmation dialog.
 - Add FFmpeg vendoring and Wasm build scripts.
 - Implement byte-based image probing, first-frame decode, fit-within area
   scaling, and RGBA output through libavformat, libavcodec, and libswscale.
