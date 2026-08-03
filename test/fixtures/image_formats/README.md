@@ -43,4 +43,6 @@ magick 'test/fixtures/image_formats/sources/test_animated.webp[0]' \
 ```
 
 The native harness uses the same SHA-256-verified reduced artifact bundled for
-production consumers; no system FFmpeg installation is involved.
+production consumers; no system FFmpeg installation is involved. The browser
+corpus suite repeats metadata, full-resolution golden, and fit-within geometry
+checks for every curated format through the production Worker/Wasm backend.

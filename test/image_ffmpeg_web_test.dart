@@ -1,39 +1,18 @@
 @TestOn('browser')
 library;
 
-import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:image_ffmpeg/image_ffmpeg.dart';
 import 'package:test/test.dart';
 
-@JS()
-external JSPromise<Response> fetch(JSString url);
+import 'support/browser_test_support.dart';
 
-extension type Response._(JSObject _) implements JSObject {
-  external bool get ok;
-  external int get status;
-  external JSPromise<JSArrayBuffer> arrayBuffer();
-}
-
-/// The test server maps `packages/image_ffmpeg/` to this package's `lib/`
-/// relative to the generated test page, the same way `dart compile js` sites
-/// are expected to serve `lib/web/` and point [FfmpegWeb.workerUri] at it.
-final _servedWorkerUri = Uri.parse(
-  'packages/image_ffmpeg/web/image_ffmpeg_worker.mjs',
-);
-
-Future<Uint8List> _fetchFixture(String name) async {
-  final url = 'fixtures/image_formats/sources/$name';
-  final response = await fetch(url.toJS).toDart;
-  if (!response.ok) {
-    throw StateError('GET $url returned HTTP ${response.status}');
-  }
-  return (await response.arrayBuffer().toDart).toDart.asUint8List();
-}
+Future<Uint8List> _fetchFixture(String name) =>
+    fetchTestAsset('fixtures/image_formats/sources/$name');
 
 void main() {
-  setUp(() => FfmpegWeb.workerUri = _servedWorkerUri);
+  setUp(() => FfmpegWeb.workerUri = servedWorkerUri);
   tearDown(() => FfmpegWeb.workerUri = null);
 
   test('loads the Wasm worker and reports capabilities', () async {

@@ -20,6 +20,9 @@
 - Cover the browser backend in real Chrome under dart2js and Dart2Wasm.
 - Add unattended real-Safari dart2js coverage with a package:test launcher that
   bypasses Safari's local-file confirmation dialog.
+- Mirror the complete 439-test native conformance matrix through Chrome dart2js,
+  Chrome Dart2Wasm, and Safari dart2js, including 340 source fixtures,
+  malformed inputs, metadata/scaling checks, and pixel references.
 - Add FFmpeg vendoring and Wasm build scripts.
 - Implement byte-based image probing, first-frame decode, fit-within area
   scaling, and RGBA output through libavformat, libavcodec, and libswscale.

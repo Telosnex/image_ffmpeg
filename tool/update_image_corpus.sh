@@ -27,4 +27,9 @@ if [[ "$count" != 345 ]]; then
   exit 1
 fi
 
+(
+  cd "$repo_root"
+  dart run tool/update_browser_corpus_manifest.dart
+)
+
 echo "Copied $count files from $image_repo."

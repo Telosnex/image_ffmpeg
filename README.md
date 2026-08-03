@@ -136,11 +136,13 @@ Emscripten module relatively, and the Emscripten module locates its Wasm binary
 relatively. They must be served over HTTP(S) with JavaScript/Wasm MIME types;
 `file://` does not provide a usable module-Worker origin.
 
-The dart2js application build is covered by real Chrome and Safari integration
-tests; Dart2Wasm/WasmGC is covered in Chrome because `package:test` currently
-runs Safari with dart2js. Encoded inputs are copied into transferable buffers
-before dispatch so transferring them never detaches caller-owned Dart bytes.
-Encoded and RGBA results are transferred back rather than structured-cloned.
+The complete 439-test native conformance matrix is mirrored through the real
+Worker/Wasm backend in Chrome dart2js, Chrome Dart2Wasm/WasmGC, and Safari
+dart2js. It covers all 340 source fixtures, malformed inputs, metadata, scaling,
+and reviewed or independently generated pixel references. Encoded inputs are
+copied into transferable buffers before dispatch so transferring them never
+detaches caller-owned Dart bytes. Encoded and RGBA results are transferred back
+rather than structured-cloned.
 
 ## Native platforms
 
@@ -183,9 +185,12 @@ in [`native_artifacts/README.md`](native_artifacts/README.md).
 dart pub get
 dart run ffigen --config ffigen.yaml
 dart test test/image_ffmpeg_test.dart
-dart test -p chrome test/image_ffmpeg_web_test.dart
-dart test -p chrome -c dart2wasm test/image_ffmpeg_web_test.dart
-dart test -p safari test/image_ffmpeg_web_test.dart # macOS only
+dart test -p chrome --concurrency=1 \
+  test/image_ffmpeg_web_test.dart test/image_ffmpeg_web_corpus_test.dart
+dart test -p chrome -c dart2wasm --concurrency=1 \
+  test/image_ffmpeg_web_test.dart test/image_ffmpeg_web_corpus_test.dart
+dart test -p safari --concurrency=1 \
+  test/image_ffmpeg_web_test.dart test/image_ffmpeg_web_corpus_test.dart # macOS
 dart analyze
 ```
 
@@ -194,6 +199,14 @@ wrapper extracts `package:test`'s loopback manager URL and sends the HTTP URL to
 Safari through Launch Services, avoiding Safari's interactive **Confirm the
 file to load** dialog for the temporary `redirect.html`. It remains alive for
 the suite and closes only its test-manager tab afterward.
+
+Browsers cannot enumerate the fixture filesystem, so the corpus tests register
+cases from `test/support/image_corpus_manifest.dart`. Refreshing the upstream
+corpus regenerates it automatically. CI verifies it independently with:
+
+```bash
+dart run tool/update_browser_corpus_manifest.dart --check
+```
 
 Run the native format corpus against the same pinned artifact shipped to
 consumers:
@@ -247,13 +260,11 @@ matrix.
 
 ## Next milestones
 
-1. Run the complete native fixture corpus against the browser backend; compare
-   dimensions and pixel tolerances rather than assuming scaler bit identity.
-2. Add configurable resource limits, broader metadata support, and ICC color
+1. Add configurable resource limits, broader metadata support, and ICC color
    management.
-3. Add a persistent native helper isolate and reusable decoder contexts to
+2. Add a persistent native helper isolate and reusable decoder contexts to
    distinguish codec time from setup time in repeated workloads.
-4. Generalize the build/ABI generator into a reusable dual-target C-library
+3. Generalize the build/ABI generator into a reusable dual-target C-library
    template.
 
 See [doc/PORTING_C_LIBRARIES.md](doc/PORTING_C_LIBRARIES.md) for the reusable
