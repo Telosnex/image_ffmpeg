@@ -15,10 +15,9 @@ behind one Dart API:
 ```
 
 Native builds bundle SHA-256-pinned artifacts for Android, iOS, Linux, macOS,
-and Windows. Each artifact contains the stable shim plus an exact August 3,
-2026 post-8.1 FFmpeg `master` snapshot, decoder-only libaom 3.12.1, and zlib
-1.3.1. The snapshot includes FFmpeg's native animated-WebP decoder and is
-pinned by commit rather than a moving branch. Consumers do not install FFmpeg,
+and Windows. Each artifact contains the stable shim plus the official FFmpeg
+9.0 release, decoder-only libaom 3.12.1, and zlib 1.3.1. FFmpeg 9.0 includes its native animated-WebP decoder and is pinned by the
+release tag's exact peeled commit. Consumers do not install FFmpeg,
 Homebrew, CocoaPods, or Gradle native dependencies. Browsers use the same
 reduced codec profile through a bundled WebAssembly module running off the UI
 thread in a module Worker.
@@ -243,7 +242,7 @@ node benchmark/benchmark_wallpaper_wasm.mjs [optional/input.jpg]
 For a real browser run, link or copy the fixture to
 `benchmark/wallpaper.jpg`, serve the package root, and open
 `benchmark/benchmark_wallpaper_web.html` in Chrome. The final module is about
-2.5 MiB with the pinned post-8.1 FFmpeg snapshot, libaom 3.12.1, the nine
+2.5 MiB with the pinned FFmpeg 9.0 release, libaom 3.12.1, the nine
 decode formats listed above, and JPEG/PNG encoders.
 
 Reproduce native artifacts from immutable source commits:

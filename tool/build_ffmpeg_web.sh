@@ -21,7 +21,7 @@ if [[ ! -f "$aom_prefix/lib/libaom.a" ]]; then
 fi
 export AOM_PREFIX="$aom_prefix"
 
-configuration_version=9
+configuration_version=10
 if [[ ! -f "$build_directory/.image_ffmpeg_config_version" ]] ||
     [[ "$(cat "$build_directory/.image_ffmpeg_config_version")" != "$configuration_version" ]]; then
   rm -rf "$build_directory"

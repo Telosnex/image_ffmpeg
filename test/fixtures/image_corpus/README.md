@@ -84,8 +84,8 @@ The suite pins current behavior rather than silently dropping difficult files:
 
 The newly supported float32 TIFF and all five APNGs have positive decode and
 pixel-regression coverage. The four animated WebP regressions using
-`ANIM`/`ANMF` are positive first-frame decode tests under the pinned post-8.1
-FFmpeg snapshot. All other TIFFs have exact reviewed PNG goldens; no
+`ANIM`/`ANMF` are positive first-frame decode tests under the pinned FFmpeg 9.0
+release. All other TIFFs have exact reviewed PNG goldens; no
 ImageMagick interpretation is used as their correctness oracle.
 
 The 14 corrupt PNGSuite `x*` images and four historical `broken/` regressions

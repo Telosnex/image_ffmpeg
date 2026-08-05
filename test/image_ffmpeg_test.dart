@@ -22,7 +22,7 @@ void main() {
     expect(ffmpeg.capabilities.canDecodeImage, isTrue);
     expect(ffmpeg.capabilities.canEncodeJpeg, isTrue);
     expect(ffmpeg.capabilities.canEncodePng, isTrue);
-    expect(ffmpeg.capabilities.buildInfo, contains('Lavc63.7.100'));
+    expect(ffmpeg.capabilities.buildInfo, contains('Lavc63.1.100'));
   });
 
   test('decodes the first animated WebP frame', () async {

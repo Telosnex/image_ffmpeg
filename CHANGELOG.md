@@ -4,8 +4,8 @@
 - Bundle SHA-256-verified reduced FFmpeg native code assets for Android
   armv7/arm64/x64, iOS arm64 device and arm64/x64 simulator, Linux arm64/x64,
   macOS arm64/x64, and Windows x64 without a system FFmpeg dependency.
-- Add reproducible immutable-commit builds for an August 3, 2026 post-8.1
-  FFmpeg `master` snapshot, decoder-only libaom 3.12.1, and zlib 1.3.1, with
+- Add reproducible immutable-commit builds for the official FFmpeg 9.0
+  release, decoder-only libaom 3.12.1, and zlib 1.3.1, with
   constrained exports and dependency checks.
 - Decode static and animated WebP, returning the first animation frame.
 - Normalize deprecated full-range `YUVJ*` frames before scaling and explicitly
