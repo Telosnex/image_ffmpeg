@@ -153,12 +153,7 @@ abstract final class ImageFfmpeg {
       _validateUint32(crop.width, 'crop.width');
       _validateUint32(crop.height, 'crop.height');
     }
-    switch (output) {
-      case JpegImageOutput():
-        _validateJpegOptions(output.quality, output.backgroundColor);
-      case PngImageOutput():
-        _validatePngCompression(output.compressionLevel);
-    }
+    _validateOutput(output);
     return (await _getBackend()).transcodeImage(
       bytes,
       output: output,
@@ -166,7 +161,34 @@ abstract final class ImageFfmpeg {
       maxHeight: maxHeight,
       applyOrientation: applyOrientation,
       crop: crop,
+      fill: null,
       passthroughIfUnchanged: passthroughIfUnchanged,
+    );
+  }
+
+  /// Decodes, fills one solid rectangle, and encodes in one native/Wasm call.
+  ///
+  /// The full-resolution RGBA intermediate never crosses into Dart. The fill
+  /// is applied after optional orientation and before encoding, making this
+  /// suitable for high-frequency screenshot redaction and masking.
+  static Future<EncodedImage> fillRectangle(
+    Uint8List bytes, {
+    required ImageFillRect rectangle,
+    required ImageOutput output,
+    bool applyOrientation = false,
+  }) async {
+    _validateEncodedBytes(bytes);
+    _validateFillRect(rectangle);
+    _validateOutput(output);
+    return (await _getBackend()).transcodeImage(
+      bytes,
+      output: output,
+      maxWidth: 0,
+      maxHeight: 0,
+      applyOrientation: applyOrientation,
+      crop: null,
+      fill: rectangle,
+      passthroughIfUnchanged: false,
     );
   }
 
@@ -180,6 +202,33 @@ abstract final class ImageFfmpeg {
       throw ArgumentError.value(quality, 'quality', 'must be from 1 to 100');
     }
     _validateUint32(backgroundColor, 'backgroundColor');
+  }
+
+  static void _validateFillRect(ImageFillRect rectangle) {
+    if (rectangle.x < 0 ||
+        rectangle.y < 0 ||
+        rectangle.width <= 0 ||
+        rectangle.height <= 0) {
+      throw ArgumentError.value(
+        rectangle,
+        'rectangle',
+        'must have positive geometry',
+      );
+    }
+    _validateUint32(rectangle.x, 'rectangle.x');
+    _validateUint32(rectangle.y, 'rectangle.y');
+    _validateUint32(rectangle.width, 'rectangle.width');
+    _validateUint32(rectangle.height, 'rectangle.height');
+    _validateUint32(rectangle.color, 'rectangle.color');
+  }
+
+  static void _validateOutput(ImageOutput output) {
+    switch (output) {
+      case JpegImageOutput():
+        _validateJpegOptions(output.quality, output.backgroundColor);
+      case PngImageOutput():
+        _validatePngCompression(output.compressionLevel);
+    }
   }
 
   static void _validatePngCompression(int compressionLevel) {

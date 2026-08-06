@@ -1,5 +1,7 @@
 ## 0.0.1
 
+- Add fused `ImageFfmpeg.fillRectangle` decode/fill/encode for hot screenshot
+  masking paths without round-tripping full RGBA buffers through Dart.
 - Replace the resource-handle-shaped `load()`/`dispose()` API with lazy static
   operations. Browser Worker/Wasm resources are package-managed and live for
   the page lifetime instead of being repeatedly initialized and destroyed.

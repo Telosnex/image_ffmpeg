@@ -385,7 +385,7 @@ elif [[ "$os" == windows ]]; then
 else
   version_script="$build_root/exports.map"
   {
-    echo 'IMAGE_FFMPEG_3 {'
+    echo 'IMAGE_FFMPEG_4 {'
     echo '  global:'
     sed 's/^/    /; s/$/;/' "$exports"
     echo '  local: *;'

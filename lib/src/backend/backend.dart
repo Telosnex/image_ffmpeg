@@ -36,6 +36,7 @@ abstract interface class FfmpegBackend {
     required int maxHeight,
     required bool applyOrientation,
     required ImageCrop? crop,
+    required ImageFillRect? fill,
     required bool passthroughIfUnchanged,
   });
 }

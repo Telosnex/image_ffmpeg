@@ -58,6 +58,19 @@ final thumbnail = await ImageFfmpeg.transcodeImage(
   applyOrientation: true,
   passthroughIfUnchanged: true,
 );
+
+// Decode, redact/mask, and encode without transferring full RGBA to Dart.
+final redacted = await ImageFfmpeg.fillRectangle(
+  screenshotBytes,
+  rectangle: const ImageFillRect(
+    x: 120,
+    y: 80,
+    width: 640,
+    height: 480,
+    color: 0xff777777,
+  ),
+  output: const ImageOutput.jpeg(quality: 100, chroma: JpegChroma.yuv444),
+);
 ```
 
 The API is asynchronous and lazily initialized on every platform. Native work
@@ -85,6 +98,11 @@ one additional coarse call. `transcodeImage` fuses first-frame decode, EXIF
 orientation, crop, fit-within scaling, and encode, so a potentially large RGBA
 intermediate never crosses the FFI/Wasm boundary. That minimizes both calls and
 memory traffic.
+
+`fillRectangle` fuses decode, an in-place solid RGBA fill, and JPEG/PNG encode.
+It is intended for high-frequency screenshot masking where transferring a full
+RGBA frame into Dart solely to overwrite a rectangle would dominate memory
+traffic.
 
 `decodeImageBoxAverage` instead decodes at full resolution and assigns every
 source pixel to exactly one destination cell using fixed integer boundaries and

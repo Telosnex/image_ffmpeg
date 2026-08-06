@@ -16,7 +16,7 @@ extern "C" {
 
 // Increment only when the C ABI changes incompatibly. Dart rejects a native or
 // Wasm module with a different version before making any other calls.
-#define IMAGE_FFMPEG_ABI_VERSION 3u
+#define IMAGE_FFMPEG_ABI_VERSION 4u
 
 typedef enum image_ffmpeg_status {
   IMAGE_FFMPEG_OK = 0,
@@ -113,6 +113,11 @@ typedef struct image_ffmpeg_transcode_options {
   uint32_t crop_y;
   uint32_t crop_width;
   uint32_t crop_height;
+  uint32_t fill_x;
+  uint32_t fill_y;
+  uint32_t fill_width;
+  uint32_t fill_height;
+  uint32_t fill_argb;
   uint32_t jpeg_quality;
   uint32_t jpeg_chroma;
   uint32_t jpeg_background_argb;
@@ -209,9 +214,10 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_encode_png_rgba(
     uint32_t compression_level,
     image_ffmpeg_buffer *output);
 
-// Fused first-frame decode, optional EXIF orientation, crop, fit-within resize,
-// and JPEG/PNG encode. Crop coordinates are in oriented coordinates when
-// apply_orientation is nonzero. A zero crop width and height means no crop.
+// Fused first-frame decode, optional EXIF orientation, solid fill, crop,
+// fit-within resize, and JPEG/PNG encode. Fill and crop coordinates are in
+// oriented coordinates when apply_orientation is nonzero. Zero fill or crop
+// width and height disable that operation.
 IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_transcode_image(
     const uint8_t *input,
     uint32_t input_length,

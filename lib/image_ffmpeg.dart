@@ -14,6 +14,7 @@ export 'src/models.dart'
         FfmpegException,
         FfmpegRuntime,
         ImageCrop,
+        ImageFillRect,
         ImageFormat,
         ImageInfo,
         ImageOrientation,

@@ -166,9 +166,10 @@ external int image_ffmpeg_encode_png_rgba(
   ffi.Pointer<image_ffmpeg_buffer> output,
 );
 
-/// Fused first-frame decode, optional EXIF orientation, crop, fit-within resize,
-/// and JPEG/PNG encode. Crop coordinates are in oriented coordinates when
-/// apply_orientation is nonzero. A zero crop width and height means no crop.
+/// Fused first-frame decode, optional EXIF orientation, solid fill, crop,
+/// fit-within resize, and JPEG/PNG encode. Fill and crop coordinates are in
+/// oriented coordinates when apply_orientation is nonzero. Zero fill or crop
+/// width and height disable that operation.
 @ffi.Native<
   ffi.Int32 Function(
     ffi.Pointer<ffi.Uint8>,
@@ -425,6 +426,21 @@ final class image_ffmpeg_transcode_options extends ffi.Struct {
   external int crop_height;
 
   @ffi.Uint32()
+  external int fill_x;
+
+  @ffi.Uint32()
+  external int fill_y;
+
+  @ffi.Uint32()
+  external int fill_width;
+
+  @ffi.Uint32()
+  external int fill_height;
+
+  @ffi.Uint32()
+  external int fill_argb;
+
+  @ffi.Uint32()
   external int jpeg_quality;
 
   @ffi.Uint32()
@@ -456,4 +472,4 @@ final class image_ffmpeg_encoded_image extends ffi.Struct {
   external int format;
 }
 
-const int IMAGE_FFMPEG_ABI_VERSION = 3;
+const int IMAGE_FFMPEG_ABI_VERSION = 4;

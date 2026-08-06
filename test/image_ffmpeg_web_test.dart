@@ -18,7 +18,7 @@ void main() {
   test('loads the Wasm worker and reports capabilities', () async {
     final capabilities = await ImageFfmpeg.capabilities;
     expect(capabilities.runtime, FfmpegRuntime.webAssembly);
-    expect(capabilities.abiVersion, 3);
+    expect(capabilities.abiVersion, 4);
     expect(capabilities.canDecodeImage, isTrue);
     expect(capabilities.canEncodeJpeg, isTrue);
     expect(capabilities.canEncodePng, isTrue);
@@ -109,6 +109,40 @@ void main() {
       alphaMode: BoxAverageAlphaMode.opaqueOnly,
     );
     expect(opaqueOnly.bytes, [255, 0, 0, 255]);
+  });
+
+  test('fills a rectangle inside the Worker', () async {
+    final source = RgbaImage(
+      width: 4,
+      height: 3,
+      stride: 16,
+      bytes: Uint8List.fromList([
+        for (var pixel = 0; pixel < 12; pixel++) ...[240, 241, 242, 255],
+      ]),
+    );
+    final png = await ImageFfmpeg.encodePng(source);
+    final filled = await ImageFfmpeg.fillRectangle(
+      png,
+      rectangle: const ImageFillRect(
+        x: 1,
+        y: 1,
+        width: 2,
+        height: 1,
+        color: 0xff123456,
+      ),
+      output: const ImageOutput.png(),
+    );
+    final decoded = await ImageFfmpeg.decodeImage(filled.bytes);
+    expect(decoded.bytes.sublist(20, 28), [
+      0x12,
+      0x34,
+      0x56,
+      0xff,
+      0x12,
+      0x34,
+      0x56,
+      0xff,
+    ]);
   });
 
   test('transcodes with orientation, scale, and format change', () async {

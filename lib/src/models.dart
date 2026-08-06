@@ -144,6 +144,29 @@ final class ImageCrop {
   final int height;
 }
 
+/// A solid RGBA rectangle written into decoded pixels before encoding.
+///
+/// Coordinates are post-orientation when orientation is enabled. [color] is
+/// `0xAARRGGBB`.
+final class ImageFillRect {
+  const ImageFillRect({
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+    required this.color,
+  }) : assert(x >= 0),
+       assert(y >= 0),
+       assert(width > 0),
+       assert(height > 0);
+
+  final int x;
+  final int y;
+  final int width;
+  final int height;
+  final int color;
+}
+
 /// Output settings for [ImageFfmpeg.transcodeImage].
 sealed class ImageOutput {
   const ImageOutput();

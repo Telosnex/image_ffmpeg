@@ -27,9 +27,9 @@ IMAGE_FFMPEG_EXPORT uint32_t image_ffmpeg_abi_version(void) {
 
 IMAGE_FFMPEG_EXPORT const char *image_ffmpeg_build_info(void) {
 #if defined(IMAGE_FFMPEG_WITH_FFMPEG)
-  return "image_ffmpeg ABI 3; " LIBAVCODEC_IDENT;
+  return "image_ffmpeg ABI 4; " LIBAVCODEC_IDENT;
 #else
-  return "image_ffmpeg ABI 3; scaffold (FFmpeg not linked)";
+  return "image_ffmpeg ABI 4; scaffold (FFmpeg not linked)";
 #endif
 }
 
@@ -1467,6 +1467,30 @@ static int32_t image_ffmpeg_crop_rgba(image_ffmpeg_image *image, uint32_t x,
   return IMAGE_FFMPEG_OK;
 }
 
+static int32_t image_ffmpeg_fill_rgba(image_ffmpeg_image *image, uint32_t x,
+                                     uint32_t y, uint32_t width,
+                                     uint32_t height, uint32_t color_argb) {
+  if (width == 0 && height == 0) return IMAGE_FFMPEG_OK;
+  if (width == 0 || height == 0 || x > image->width || y > image->height ||
+      width > image->width - x || height > image->height - y) {
+    return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
+  }
+  const uint8_t color[4] = {
+      (uint8_t)((color_argb >> 16) & 0xffu),
+      (uint8_t)((color_argb >> 8) & 0xffu),
+      (uint8_t)(color_argb & 0xffu),
+      (uint8_t)((color_argb >> 24) & 0xffu),
+  };
+  for (uint32_t row = y; row < y + height; row++) {
+    uint8_t *pixel = image->data + (size_t)row * image->stride +
+                     (size_t)x * 4u;
+    for (uint32_t column = 0; column < width; column++, pixel += 4) {
+      memcpy(pixel, color, sizeof(color));
+    }
+  }
+  return IMAGE_FFMPEG_OK;
+}
+
 static int32_t image_ffmpeg_fit_rgba(image_ffmpeg_image *image,
                                     uint32_t max_width,
                                     uint32_t max_height) {
@@ -1535,6 +1559,7 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_transcode_image(
       options->apply_orientation > 1 ||
       options->passthrough_if_unchanged > 1 ||
       ((options->crop_width == 0) != (options->crop_height == 0)) ||
+      ((options->fill_width == 0) != (options->fill_height == 0)) ||
       options->jpeg_quality < 1 || options->jpeg_quality > 100 ||
       options->jpeg_chroma > IMAGE_FFMPEG_JPEG_CHROMA_444 ||
       options->png_compression_level > 9) {
@@ -1555,13 +1580,14 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_transcode_image(
   uint32_t source_height =
       options->apply_orientation ? info.display_height : info.height;
   int no_crop = options->crop_width == 0;
+  int no_fill = options->fill_width == 0;
   int no_resize =
       (options->max_width == 0 || source_width <= options->max_width) &&
       (options->max_height == 0 || source_height <= options->max_height);
   int orientation_unchanged =
       !options->apply_orientation ||
       info.orientation == IMAGE_FFMPEG_ORIENTATION_NORMAL;
-  if (options->passthrough_if_unchanged && no_crop && no_resize &&
+  if (options->passthrough_if_unchanged && no_crop && no_fill && no_resize &&
       orientation_unchanged && info.format == options->output_format) {
     uint8_t *copy = (uint8_t *)malloc(input_length);
     if (copy == NULL) {
@@ -1584,6 +1610,10 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_transcode_image(
     status = image_ffmpeg_orient_rgba(&decoded, info.orientation);
     if (status != IMAGE_FFMPEG_OK) goto cleanup;
   }
+  status = image_ffmpeg_fill_rgba(
+      &decoded, options->fill_x, options->fill_y, options->fill_width,
+      options->fill_height, options->fill_argb);
+  if (status != IMAGE_FFMPEG_OK) goto cleanup;
   status = image_ffmpeg_crop_rgba(
       &decoded, options->crop_x, options->crop_y, options->crop_width,
       options->crop_height);

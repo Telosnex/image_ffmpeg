@@ -92,6 +92,7 @@ final class _NativeBackend implements FfmpegBackend {
     required int maxHeight,
     required bool applyOrientation,
     required ImageCrop? crop,
+    required ImageFillRect? fill,
     required bool passthroughIfUnchanged,
   }) => Isolate.run(
     () => _transcodeOnHelperIsolate(
@@ -101,6 +102,7 @@ final class _NativeBackend implements FfmpegBackend {
       maxHeight,
       applyOrientation,
       crop,
+      fill,
       passthroughIfUnchanged,
     ),
   );
@@ -195,6 +197,7 @@ EncodedImage _transcodeOnHelperIsolate(
   int maxHeight,
   bool applyOrientation,
   ImageCrop? crop,
+  ImageFillRect? fill,
   bool passthroughIfUnchanged,
 ) {
   final input = calloc<Uint8>(encoded.length);
@@ -212,6 +215,11 @@ EncodedImage _transcodeOnHelperIsolate(
       ..crop_y = crop?.y ?? 0
       ..crop_width = crop?.width ?? 0
       ..crop_height = crop?.height ?? 0
+      ..fill_x = fill?.x ?? 0
+      ..fill_y = fill?.y ?? 0
+      ..fill_width = fill?.width ?? 0
+      ..fill_height = fill?.height ?? 0
+      ..fill_argb = fill?.color ?? 0
       ..jpeg_quality = 80
       ..jpeg_chroma = JpegChroma.yuv420.index
       ..jpeg_background_argb = 0xffffffff

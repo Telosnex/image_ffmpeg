@@ -56,6 +56,7 @@ final class _UnsupportedBackend implements FfmpegBackend {
     required int maxHeight,
     required bool applyOrientation,
     required ImageCrop? crop,
+    required ImageFillRect? fill,
     required bool passthroughIfUnchanged,
   }) => throw const FfmpegException(-5, 'Unsupported platform');
 }

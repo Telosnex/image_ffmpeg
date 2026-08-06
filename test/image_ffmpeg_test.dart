@@ -16,8 +16,8 @@ void main() {
   test('loads and validates the native code asset ABI', () async {
     final capabilities = await ImageFfmpeg.capabilities;
     expect(capabilities.runtime, FfmpegRuntime.native);
-    expect(capabilities.abiVersion, 3);
-    expect(capabilities.buildInfo, contains('image_ffmpeg ABI 3'));
+    expect(capabilities.abiVersion, 4);
+    expect(capabilities.buildInfo, contains('image_ffmpeg ABI 4'));
   });
 
   test('bundles the production FFmpeg capability', () async {
@@ -328,6 +328,64 @@ void main() {
       expect(redBackground.bytes[index + 1], lessThanOrEqualTo(5));
       expect(redBackground.bytes[index + 2], lessThanOrEqualTo(5));
     }
+  });
+
+  test('fills a rectangle without crossing an RGBA buffer into Dart', () async {
+    final source = RgbaImage(
+      width: 6,
+      height: 4,
+      stride: 24,
+      bytes: Uint8List.fromList([
+        for (var pixel = 0; pixel < 24; pixel++) ...[200, 210, 220, 255],
+      ]),
+    );
+    final png = await ImageFfmpeg.encodePng(source);
+    final filled = await ImageFfmpeg.fillRectangle(
+      png,
+      rectangle: const ImageFillRect(
+        x: 2,
+        y: 1,
+        width: 3,
+        height: 2,
+        color: 0xff112233,
+      ),
+      output: const ImageOutput.png(),
+    );
+    expect(
+      (filled.width, filled.height, filled.format),
+      (6, 4, ImageFormat.png),
+    );
+
+    final decoded = await ImageFfmpeg.decodeImage(filled.bytes);
+    for (var y = 0; y < decoded.height; y++) {
+      for (var x = 0; x < decoded.width; x++) {
+        final offset = y * decoded.stride + x * 4;
+        expect(
+          decoded.bytes.sublist(offset, offset + 4),
+          x >= 2 && x < 5 && y >= 1 && y < 3
+              ? [0x11, 0x22, 0x33, 0xff]
+              : [200, 210, 220, 255],
+          reason: 'pixel ($x, $y)',
+        );
+      }
+    }
+
+    await expectLater(
+      ImageFfmpeg.fillRectangle(
+        png,
+        rectangle: const ImageFillRect(
+          x: 5,
+          y: 0,
+          width: 2,
+          height: 1,
+          color: 0xff000000,
+        ),
+        output: const ImageOutput.jpeg(),
+      ),
+      throwsA(
+        isA<FfmpegException>().having((error) => error.status, 'status', -1),
+      ),
+    );
   });
 
   test('decodes with deterministic integer box averaging', () async {

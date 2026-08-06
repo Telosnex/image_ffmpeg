@@ -8,7 +8,7 @@ import 'backend.dart';
 
 /// Must match `IMAGE_FFMPEG_ABI_VERSION` in `src/image_ffmpeg.h` and
 /// `ABI_VERSION` in `lib/web/image_ffmpeg_loader.mjs`.
-const _abiVersion = 3;
+const _abiVersion = 4;
 
 /// Must match `IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888` in `src/image_ffmpeg.h`.
 const _pixelFormatRgba8888 = 1;
@@ -201,6 +201,7 @@ final class _WebBackend implements FfmpegBackend {
     required int maxHeight,
     required bool applyOrientation,
     required ImageCrop? crop,
+    required ImageFillRect? fill,
     required bool passthroughIfUnchanged,
   }) async {
     final buffer = _transferableBuffer(encoded);
@@ -219,6 +220,11 @@ final class _WebBackend implements FfmpegBackend {
             cropY: crop?.y ?? 0,
             cropWidth: crop?.width ?? 0,
             cropHeight: crop?.height ?? 0,
+            fillX: fill?.x ?? 0,
+            fillY: fill?.y ?? 0,
+            fillWidth: fill?.width ?? 0,
+            fillHeight: fill?.height ?? 0,
+            fillColor: fill?.color ?? 0,
             jpegQuality: switch (output) {
               JpegImageOutput() => output.quality,
               PngImageOutput() => 80,
@@ -396,6 +402,11 @@ extension type _TranscodeOptions._(JSObject _) implements JSObject {
     int cropY,
     int cropWidth,
     int cropHeight,
+    int fillX,
+    int fillY,
+    int fillWidth,
+    int fillHeight,
+    int fillColor,
     int jpegQuality,
     int jpegChroma,
     int jpegBackgroundColor,
