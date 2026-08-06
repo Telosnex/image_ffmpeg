@@ -28,6 +28,13 @@ final class _UnsupportedBackend implements FfmpegBackend {
   }) => throw const FfmpegException(-5, 'Unsupported platform');
 
   @override
+  Future<RgbaImage> decodeImageBoxAverage(
+    Uint8List encoded, {
+    required int maxDimension,
+    required BoxAverageAlphaMode alphaMode,
+  }) => throw const FfmpegException(-5, 'Unsupported platform');
+
+  @override
   Future<Uint8List> encodeJpeg(
     RgbaImage image, {
     required int quality,

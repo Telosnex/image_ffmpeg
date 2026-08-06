@@ -35,6 +35,11 @@ final image = await ffmpeg.decodeImage(
   maxWidth: 96,
   maxHeight: 96,
 );
+final paletteSource = await ffmpeg.decodeImageBoxAverage(
+  arbitraryBytes,
+  maxDimension: 96,
+  alphaMode: BoxAverageAlphaMode.opaqueOnly,
+);
 final jpeg = await ffmpeg.encodeJpeg(
   image,
   quality: 90,
@@ -82,6 +87,13 @@ one additional coarse call. `transcodeImage` fuses first-frame decode, EXIF
 orientation, crop, fit-within scaling, and encode, so a potentially large RGBA
 intermediate never crosses the FFI/Wasm boundary. That minimizes both calls and
 memory traffic.
+
+`decodeImageBoxAverage` instead decodes at full resolution and assigns every
+source pixel to exactly one destination cell using fixed integer boundaries and
+half-up rounding. The full RGBA intermediate remains inside the native helper
+isolate or browser Worker; only the small folded image crosses back to Dart.
+Callers can average all RGBA samples or retain only fully opaque samples for
+stable palette and theme-color extraction.
 
 The image allow-list is JPEG, PNG/APNG, static and animated WebP, GIF, BMP,
 TIFF, AVIF, PSD, and ICO; the reduced Wasm build includes the same codecs.

@@ -11,8 +11,8 @@ void main() {
     addTearDown(ffmpeg.dispose);
 
     expect(ffmpeg.capabilities.runtime, FfmpegRuntime.native);
-    expect(ffmpeg.capabilities.abiVersion, 2);
-    expect(ffmpeg.capabilities.buildInfo, contains('image_ffmpeg ABI 2'));
+    expect(ffmpeg.capabilities.abiVersion, 3);
+    expect(ffmpeg.capabilities.buildInfo, contains('image_ffmpeg ABI 3'));
   });
 
   test('bundles the production FFmpeg capability', () async {
@@ -327,6 +327,67 @@ void main() {
     }
   });
 
+  test('decodes with deterministic integer box averaging', () async {
+    final ffmpeg = await Ffmpeg.load();
+    addTearDown(ffmpeg.dispose);
+    final source = RgbaImage(
+      width: 2,
+      height: 1,
+      stride: 8,
+      bytes: Uint8List.fromList(const [255, 0, 0, 255, 0, 0, 255, 0]),
+    );
+    final png = await ffmpeg.encodePng(source);
+
+    final included = await ffmpeg.decodeImageBoxAverage(png, maxDimension: 1);
+    expect((included.width, included.height, included.stride), (1, 1, 4));
+    expect(included.bytes, [128, 0, 128, 128]);
+
+    final opaqueOnly = await ffmpeg.decodeImageBoxAverage(
+      png,
+      maxDimension: 1,
+      alphaMode: BoxAverageAlphaMode.opaqueOnly,
+    );
+    expect(opaqueOnly.bytes, [255, 0, 0, 255]);
+  });
+
+  test('box averaging has fixed cell boundaries and rounding', () async {
+    final ffmpeg = await Ffmpeg.load();
+    addTearDown(ffmpeg.dispose);
+    const width = 7;
+    const height = 5;
+    final source = RgbaImage(
+      width: width,
+      height: height,
+      stride: width * 4,
+      bytes: Uint8List.fromList([
+        for (var y = 0; y < height; y++)
+          for (var x = 0; x < width; x++) ...[
+            x * 31 + y,
+            y * 47 + x,
+            x * 17 + y * 13,
+            (x + y).isEven ? 255 : 127,
+          ],
+      ]),
+    );
+    final png = await ffmpeg.encodePng(source);
+    final decoded = await ffmpeg.decodeImage(png);
+
+    for (final alphaMode in BoxAverageAlphaMode.values) {
+      final actual = await ffmpeg.decodeImageBoxAverage(
+        png,
+        maxDimension: 3,
+        alphaMode: alphaMode,
+      );
+      final expected = _referenceBoxAverage(
+        decoded,
+        maxDimension: 3,
+        alphaMode: alphaMode,
+      );
+      expect((actual.width, actual.height), (3, 2));
+      expect(actual.bytes, expected.bytes, reason: alphaMode.name);
+    }
+  });
+
   test('validates arguments before entering the backend', () async {
     final ffmpeg = await Ffmpeg.load();
     addTearDown(ffmpeg.dispose);
@@ -334,6 +395,10 @@ void main() {
     expect(() => ffmpeg.decodeImage(Uint8List(0)), throwsArgumentError);
     expect(
       () => ffmpeg.decodeImage(Uint8List(1), maxWidth: -1),
+      throwsArgumentError,
+    );
+    expect(
+      () => ffmpeg.decodeImageBoxAverage(Uint8List(1), maxDimension: 0),
       throwsArgumentError,
     );
 
@@ -458,4 +523,54 @@ List<int> _jpegSampling(Uint8List jpeg) {
     }
   }
   throw StateError('JPEG has no baseline SOF marker');
+}
+
+RgbaImage _referenceBoxAverage(
+  RgbaImage source, {
+  required int maxDimension,
+  required BoxAverageAlphaMode alphaMode,
+}) {
+  var width = source.width;
+  var height = source.height;
+  if (width > maxDimension || height > maxDimension) {
+    (width, height) = source.width >= source.height
+        ? (maxDimension, source.height * maxDimension ~/ source.width)
+        : (source.width * maxDimension ~/ source.height, maxDimension);
+  }
+  final sums = List.filled(width * height * 4, 0);
+  final counts = List.filled(width * height, 0);
+  for (var y = 0; y < source.height; y++) {
+    for (var x = 0; x < source.width; x++) {
+      final sourceOffset = y * source.stride + x * 4;
+      if (alphaMode == BoxAverageAlphaMode.opaqueOnly &&
+          source.bytes[sourceOffset + 3] != 255) {
+        continue;
+      }
+      final cell =
+          (y * height ~/ source.height) * width + x * width ~/ source.width;
+      for (var channel = 0; channel < 4; channel++) {
+        sums[cell * 4 + channel] += source.bytes[sourceOffset + channel];
+      }
+      counts[cell]++;
+    }
+  }
+
+  final bytes = Uint8List(width * height * 4);
+  for (var cell = 0; cell < counts.length; cell++) {
+    final count = counts[cell];
+    if (count == 0) continue;
+    final half = count >> 1;
+    for (var channel = 0; channel < 4; channel++) {
+      bytes[cell * 4 + channel] = (sums[cell * 4 + channel] + half) ~/ count;
+    }
+    if (alphaMode == BoxAverageAlphaMode.opaqueOnly) {
+      bytes[cell * 4 + 3] = 255;
+    }
+  }
+  return RgbaImage(
+    width: width,
+    height: height,
+    stride: width * 4,
+    bytes: bytes,
+  );
 }

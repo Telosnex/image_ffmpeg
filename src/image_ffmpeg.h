@@ -16,7 +16,7 @@ extern "C" {
 
 // Increment only when the C ABI changes incompatibly. Dart rejects a native or
 // Wasm module with a different version before making any other calls.
-#define IMAGE_FFMPEG_ABI_VERSION 2u
+#define IMAGE_FFMPEG_ABI_VERSION 3u
 
 typedef enum image_ffmpeg_status {
   IMAGE_FFMPEG_OK = 0,
@@ -32,6 +32,14 @@ typedef enum image_ffmpeg_status {
 typedef enum image_ffmpeg_pixel_format {
   IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888 = 1
 } image_ffmpeg_pixel_format;
+
+typedef enum image_ffmpeg_box_alpha_mode {
+  // Average all four channels from every source pixel.
+  IMAGE_FFMPEG_BOX_ALPHA_INCLUDE = 0,
+  // Ignore every source pixel whose alpha is not exactly 255. Retained cells
+  // are opaque; cells without an opaque sample remain transparent black.
+  IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY = 1
+} image_ffmpeg_box_alpha_mode;
 
 typedef enum image_ffmpeg_image_format {
   IMAGE_FFMPEG_IMAGE_FORMAT_UNKNOWN = 0,
@@ -143,6 +151,18 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba(
     uint32_t input_length,
     uint32_t max_width,
     uint32_t max_height,
+    image_ffmpeg_image *output);
+
+// Decodes the first frame at full resolution, then fits it within a square and
+// folds every source pixel into exactly one destination cell using integer-only
+// box averaging. Decode and fold remain inside native/Wasm memory, so only the
+// small deterministic RGBA result crosses the language boundary. The result is
+// never upscaled and max_dimension must be nonzero.
+IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba_box_average(
+    const uint8_t *input,
+    uint32_t input_length,
+    uint32_t max_dimension,
+    uint32_t alpha_mode,
     image_ffmpeg_image *output);
 
 // Compatibility entry point. It now performs the same format-probing operation

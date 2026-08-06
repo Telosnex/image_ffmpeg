@@ -38,7 +38,7 @@ emcc "$root/src/image_ffmpeg.c" \
   -sALLOW_MEMORY_GROWTH=1 \
   -sFILESYSTEM=0 \
   -sUSE_ZLIB=1 \
-  -sEXPORTED_FUNCTIONS='["_malloc","_free","_image_ffmpeg_abi_version","_image_ffmpeg_build_info","_image_ffmpeg_has_ffmpeg","_image_ffmpeg_probe_image","_image_ffmpeg_decode_image_rgba","_image_ffmpeg_decode_jpeg_rgba","_image_ffmpeg_encode_jpeg_rgba","_image_ffmpeg_encode_jpeg_rgba_ex","_image_ffmpeg_encode_png_rgba","_image_ffmpeg_transcode_image","_image_ffmpeg_image_release","_image_ffmpeg_buffer_release","_image_ffmpeg_encoded_image_release","_image_ffmpeg_error_message"]' \
+  -sEXPORTED_FUNCTIONS='["_malloc","_free","_image_ffmpeg_abi_version","_image_ffmpeg_build_info","_image_ffmpeg_has_ffmpeg","_image_ffmpeg_probe_image","_image_ffmpeg_decode_image_rgba","_image_ffmpeg_decode_image_rgba_box_average","_image_ffmpeg_decode_jpeg_rgba","_image_ffmpeg_encode_jpeg_rgba","_image_ffmpeg_encode_jpeg_rgba_ex","_image_ffmpeg_encode_png_rgba","_image_ffmpeg_transcode_image","_image_ffmpeg_image_release","_image_ffmpeg_buffer_release","_image_ffmpeg_encoded_image_release","_image_ffmpeg_error_message"]' \
   -sEXPORTED_RUNTIME_METHODS='["UTF8ToString","HEAPU8"]' \
   -o "$root/lib/web/image_ffmpeg_module.mjs"
 

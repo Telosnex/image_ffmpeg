@@ -8,7 +8,7 @@ import 'backend.dart';
 
 /// Must match `IMAGE_FFMPEG_ABI_VERSION` in `src/image_ffmpeg.h` and
 /// `ABI_VERSION` in `lib/web/image_ffmpeg_loader.mjs`.
-const _abiVersion = 2;
+const _abiVersion = 3;
 
 /// Must match `IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888` in `src/image_ffmpeg.h`.
 const _pixelFormatRgba8888 = 1;
@@ -118,18 +118,29 @@ final class _WebBackend implements FfmpegBackend {
         transfer: buffer,
       ),
     );
-    if (result.pixelFormat != _pixelFormatRgba8888) {
-      throw FfmpegException(
-        -5,
-        'Wasm module returned unsupported pixel format ${result.pixelFormat}',
-      );
-    }
-    return RgbaImage(
-      width: result.width,
-      height: result.height,
-      stride: result.stride,
-      bytes: result.bytes.toDart,
+    return _rgbaImageFromResult(result);
+  }
+
+  @override
+  Future<RgbaImage> decodeImageBoxAverage(
+    Uint8List encoded, {
+    required int maxDimension,
+    required BoxAverageAlphaMode alphaMode,
+  }) async {
+    final buffer = _transferableBuffer(encoded);
+    final result = _DecodeResult.wrap(
+      await _request(
+        (id) => _WorkerRequest(
+          id: id,
+          operation: 'decodeImageBoxAverage',
+          encoded: buffer,
+          maxDimension: maxDimension,
+          alphaMode: alphaMode.index,
+        ),
+        transfer: buffer,
+      ),
     );
+    return _rgbaImageFromResult(result);
   }
 
   @override
@@ -362,6 +373,8 @@ extension type _WorkerRequest._(JSObject _) implements JSObject {
     int stride,
     int maxWidth,
     int maxHeight,
+    int maxDimension,
+    int alphaMode,
     int quality,
     int chroma,
     int backgroundColor,
@@ -433,4 +446,19 @@ extension type _TranscodeResult.wrap(JSObject _) implements JSObject {
   external int get width;
   external int get height;
   external int get format;
+}
+
+RgbaImage _rgbaImageFromResult(_DecodeResult result) {
+  if (result.pixelFormat != _pixelFormatRgba8888) {
+    throw FfmpegException(
+      -5,
+      'Wasm module returned unsupported pixel format ${result.pixelFormat}',
+    );
+  }
+  return RgbaImage(
+    width: result.width,
+    height: result.height,
+    stride: result.stride,
+    bytes: result.bytes.toDart,
+  );
 }

@@ -1,5 +1,8 @@
 ## 0.0.1
 
+- Add deterministic integer-only box-average decode with configurable alpha
+  handling while retaining the full-resolution RGBA intermediate inside the
+  native helper isolate or browser Worker.
 - Add a versioned, fixed-width C shim ABI.
 - Bundle SHA-256-verified reduced FFmpeg native code assets for Android
   armv7/arm64/x64, iOS arm64 device and arm64/x64 simulator, Linux arm64/x64,

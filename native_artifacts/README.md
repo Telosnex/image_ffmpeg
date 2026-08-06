@@ -29,17 +29,17 @@ definition. Licenses and notices are under `licenses/`.
 
 | Target | Minimum | SHA-256 |
 |---|---|---|
-| Android armv7 | API 24 | `3fca75244de76e5b37e292c8b06b1bc0f33c3d12dc36add7022e8e3c2c7ab984` |
-| Android arm64 | API 24 | `dc9321b1be39c29364939d807d399e2fe2e47915a28ab8b897d3150e27636447` |
-| Android x64 | API 24 | `9871a9a94645db50b609fa062473164412857e37f053a5eab2ba2f40c0816e5c` |
-| iOS arm64 device | iOS 13 | `f1975bc3566e9e6aa8631ecdd83099eff8af1c4c805cb9718050e6f5a3219121` |
-| iOS arm64 simulator | iOS 14 | `7183389bbbb95042aae1c778639d39103ac62156e4783a4c4ca4e945b51ad256` |
-| iOS x64 simulator | iOS 13 | `217a7f37e61a129f8daa60e79de00b14ccecff957bcac2e2cbb32f7954f6fe58` |
-| Linux arm64 | glibc 2.31 | `0362e680877b1388db677d7e7eff9bea99be66d75bd65c486d095246a7464804` |
-| Linux x64 | glibc 2.31 | `790413e32e10edf9de93f62ebc74bb5b2f6fd5f97d1b2e651350020f88754333` |
-| macOS arm64 | macOS 12 | `ae3f16e61fe84004eef43ceff690cce31baded4d850fd41874464c3bedb1d1d4` |
-| macOS x64 | macOS 12 | `dcf4f72e0322e11862c8747fee3453dec5162f46d1308d18e36d669d27085c07` |
-| Windows x64 | Windows 10 | `5a4db497998ef18f50d3251d558dfb6079cbfd558074f5d41cba7fd846596115` |
+| Android armv7 | API 24 | `847f743fc1d1f179089ef9807686db82b1a935c7eeca002660f040ea1de54dba` |
+| Android arm64 | API 24 | `edd317b6e9d548c83a23658310850b230fc117b1569b9f587b6680589cc012e0` |
+| Android x64 | API 24 | `0b4786bb286218c346bb7553e5ca2b0b81ae816533ce5664232086bbe2e43a5f` |
+| iOS arm64 device | iOS 13 | `8b5d24f88082cab70a32bbe3bfa4616676d46b889f4d2edf88d109b480a845c4` |
+| iOS arm64 simulator | iOS 14 | `9c83362b9f62f396790473ac1d542dd1a8ec2491b80f87ad25155da84d5cb4c3` |
+| iOS x64 simulator | iOS 13 | `861937a3b789e586314a4f0825110b8c726d0c121f7e7131436dd8e1d9ebf1ce` |
+| Linux arm64 | glibc 2.31 | `e662bcd493fba95c157378cd462f8f779de74e1df33f59900cc0bd07c9d2715b` |
+| Linux x64 | glibc 2.31 | `fd9e7e06bbcc0ed5b4765a4e7fb54ae9886bdfdf7ee2daeaeee84dc4b96ae7bf` |
+| macOS arm64 | macOS 12 | `d056decbfff2ec6068b6b58382ca7591d70f8ad026fcf405d7fd64512e8e2431` |
+| macOS x64 | macOS 12 | `f40f9d6828321089383cb9214f66a6f88025876379fe2c73ec73fc293deb669d` |
+| Windows x64 | Windows 10 | `f1419b2b7501dd56a0766c143dc18efc792a785dfc9a1afa2316b0dc81543b4b` |
 
 Unsupported target tuples fail in the build hook rather than silently shipping
 an ABI scaffold without FFmpeg.

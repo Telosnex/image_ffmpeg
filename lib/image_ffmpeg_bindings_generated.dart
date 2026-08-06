@@ -52,6 +52,28 @@ external int image_ffmpeg_decode_image_rgba(
   ffi.Pointer<image_ffmpeg_image> output,
 );
 
+/// Decodes the first frame at full resolution, then fits it within a square and
+/// folds every source pixel into exactly one destination cell using integer-only
+/// box averaging. Decode and fold remain inside native/Wasm memory, so only the
+/// small deterministic RGBA result crosses the language boundary. The result is
+/// never upscaled and max_dimension must be nonzero.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Pointer<image_ffmpeg_image>,
+  )
+>()
+external int image_ffmpeg_decode_image_rgba_box_average(
+  ffi.Pointer<ffi.Uint8> input,
+  int input_length,
+  int max_dimension,
+  int alpha_mode,
+  ffi.Pointer<image_ffmpeg_image> output,
+);
+
 /// Compatibility entry point. It now performs the same format-probing operation
 /// as image_ffmpeg_decode_image_rgba rather than requiring JPEG input.
 @ffi.Native<
@@ -215,6 +237,26 @@ enum image_ffmpeg_pixel_format {
     1 => IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888,
     _ => throw ArgumentError(
       'Unknown value for image_ffmpeg_pixel_format: $value',
+    ),
+  };
+}
+
+enum image_ffmpeg_box_alpha_mode {
+  /// Average all four channels from every source pixel.
+  IMAGE_FFMPEG_BOX_ALPHA_INCLUDE(0),
+
+  /// Ignore every source pixel whose alpha is not exactly 255. Retained cells
+  /// are opaque; cells without an opaque sample remain transparent black.
+  IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY(1);
+
+  final int value;
+  const image_ffmpeg_box_alpha_mode(this.value);
+
+  static image_ffmpeg_box_alpha_mode fromValue(int value) => switch (value) {
+    0 => IMAGE_FFMPEG_BOX_ALPHA_INCLUDE,
+    1 => IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY,
+    _ => throw ArgumentError(
+      'Unknown value for image_ffmpeg_box_alpha_mode: $value',
     ),
   };
 }
@@ -414,4 +456,4 @@ final class image_ffmpeg_encoded_image extends ffi.Struct {
   external int format;
 }
 
-const int IMAGE_FFMPEG_ABI_VERSION = 2;
+const int IMAGE_FFMPEG_ABI_VERSION = 3;

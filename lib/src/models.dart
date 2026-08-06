@@ -81,6 +81,19 @@ enum JpegChroma {
   yuv444,
 }
 
+/// How deterministic box averaging handles source alpha.
+enum BoxAverageAlphaMode {
+  /// Average red, green, blue, and alpha from every source pixel.
+  include,
+
+  /// Include only pixels whose alpha is exactly 255.
+  ///
+  /// Output cells containing retained samples are opaque. Cells without an
+  /// opaque source sample remain transparent black. This is useful when the
+  /// result feeds color extraction and hidden RGB must not affect the palette.
+  opaqueOnly,
+}
+
 /// Image metadata obtained without materializing decoded pixels.
 final class ImageInfo {
   const ImageInfo({

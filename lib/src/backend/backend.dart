@@ -14,6 +14,12 @@ abstract interface class FfmpegBackend {
     required int maxHeight,
   });
 
+  Future<RgbaImage> decodeImageBoxAverage(
+    Uint8List encoded, {
+    required int maxDimension,
+    required BoxAverageAlphaMode alphaMode,
+  });
+
   Future<Uint8List> encodeJpeg(
     RgbaImage image, {
     required int quality,

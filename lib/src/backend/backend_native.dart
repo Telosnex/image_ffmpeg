@@ -51,6 +51,16 @@ final class _NativeBackend implements FfmpegBackend {
   );
 
   @override
+  Future<RgbaImage> decodeImageBoxAverage(
+    Uint8List encoded, {
+    required int maxDimension,
+    required BoxAverageAlphaMode alphaMode,
+  }) => Isolate.run(
+    () =>
+        _decodeImageBoxAverageOnHelperIsolate(encoded, maxDimension, alphaMode),
+  );
+
+  @override
   Future<Uint8List> encodeJpeg(
     RgbaImage image, {
     required int quality,
@@ -274,29 +284,57 @@ RgbaImage _decodeImageOnHelperIsolate(
       throw FfmpegException(status, message);
     }
 
-    final image = output.ref;
-    if (image.pixel_format !=
-        native
-            .image_ffmpeg_pixel_format
-            .IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888
-            .value) {
-      throw FfmpegException(
-        -5,
-        'Native asset returned unsupported pixel format ${image.pixel_format}',
-      );
-    }
-    return RgbaImage(
-      width: image.width,
-      height: image.height,
-      stride: image.stride,
-      // Copy before releasing memory owned by the C shim. A future zero-copy
-      // API can wrap malloc memory with NativeFinalizer, but this safe path is
-      // also the same ownership shape as copying from Wasm linear memory.
-      bytes: Uint8List.fromList(image.data.asTypedList(image.length)),
-    );
+    return _copyRgbaImage(output.ref);
   } finally {
     native.image_ffmpeg_image_release(output);
     calloc.free(output);
     calloc.free(input);
   }
+}
+
+RgbaImage _decodeImageBoxAverageOnHelperIsolate(
+  Uint8List encoded,
+  int maxDimension,
+  BoxAverageAlphaMode alphaMode,
+) {
+  final input = calloc<Uint8>(encoded.length);
+  final output = calloc<native.image_ffmpeg_image>();
+  try {
+    input.asTypedList(encoded.length).setAll(0, encoded);
+    final status = native.image_ffmpeg_decode_image_rgba_box_average(
+      input,
+      encoded.length,
+      maxDimension,
+      alphaMode.index,
+      output,
+    );
+    _throwForStatus(status);
+    return _copyRgbaImage(output.ref);
+  } finally {
+    native.image_ffmpeg_image_release(output);
+    calloc.free(output);
+    calloc.free(input);
+  }
+}
+
+RgbaImage _copyRgbaImage(native.image_ffmpeg_image image) {
+  if (image.pixel_format !=
+      native
+          .image_ffmpeg_pixel_format
+          .IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888
+          .value) {
+    throw FfmpegException(
+      -5,
+      'Native asset returned unsupported pixel format ${image.pixel_format}',
+    );
+  }
+  return RgbaImage(
+    width: image.width,
+    height: image.height,
+    stride: image.stride,
+    // Copy before releasing memory owned by the C shim. A future zero-copy API
+    // can wrap malloc memory with NativeFinalizer, but this safe path also
+    // matches ownership when copying from Wasm linear memory.
+    bytes: Uint8List.fromList(image.data.asTypedList(image.length)),
+  );
 }

@@ -55,6 +55,34 @@ final class Ffmpeg {
     );
   }
 
+  /// Decodes at full resolution, then performs deterministic integer-only box
+  /// averaging while the full RGBA buffer remains in native/Wasm memory.
+  ///
+  /// Every source pixel belongs to exactly one destination cell. The result
+  /// fits inside a [maxDimension] square without upscaling. Unlike
+  /// [decodeImage]'s FFmpeg scaler, this operation has fixed cell boundaries
+  /// and rounding semantics intended for stable color extraction.
+  Future<RgbaImage> decodeImageBoxAverage(
+    Uint8List bytes, {
+    required int maxDimension,
+    BoxAverageAlphaMode alphaMode = BoxAverageAlphaMode.include,
+  }) {
+    _validateEncodedBytes(bytes);
+    if (maxDimension <= 0) {
+      throw ArgumentError.value(
+        maxDimension,
+        'maxDimension',
+        'must be positive',
+      );
+    }
+    _validateUint32(maxDimension, 'maxDimension');
+    return _backend.decodeImageBoxAverage(
+      bytes,
+      maxDimension: maxDimension,
+      alphaMode: alphaMode,
+    );
+  }
+
   /// Encodes RGBA8888 pixels as JPEG.
   ///
   /// [quality] ranges from 1 (lowest) to 100 (highest). JPEG cannot represent

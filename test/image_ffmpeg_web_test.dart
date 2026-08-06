@@ -20,7 +20,7 @@ void main() {
     final ffmpeg = await Ffmpeg.load();
     addTearDown(ffmpeg.dispose);
     expect(ffmpeg.capabilities.runtime, FfmpegRuntime.webAssembly);
-    expect(ffmpeg.capabilities.abiVersion, 2);
+    expect(ffmpeg.capabilities.abiVersion, 3);
     expect(ffmpeg.capabilities.canDecodeImage, isTrue);
     expect(ffmpeg.capabilities.canEncodeJpeg, isTrue);
     expect(ffmpeg.capabilities.canEncodePng, isTrue);
@@ -84,6 +84,28 @@ void main() {
     final info = await ffmpeg.probeImage(jpeg);
     expect(info.format, ImageFormat.jpeg);
     expect((info.width, info.height), (image.width, image.height));
+  });
+
+  test('decodes with deterministic integer box averaging', () async {
+    final ffmpeg = await Ffmpeg.load();
+    addTearDown(ffmpeg.dispose);
+    final source = RgbaImage(
+      width: 2,
+      height: 1,
+      stride: 8,
+      bytes: Uint8List.fromList(const [255, 0, 0, 255, 0, 0, 255, 0]),
+    );
+    final png = await ffmpeg.encodePng(source);
+
+    final included = await ffmpeg.decodeImageBoxAverage(png, maxDimension: 1);
+    expect(included.bytes, [128, 0, 128, 128]);
+
+    final opaqueOnly = await ffmpeg.decodeImageBoxAverage(
+      png,
+      maxDimension: 1,
+      alphaMode: BoxAverageAlphaMode.opaqueOnly,
+    );
+    expect(opaqueOnly.bytes, [255, 0, 0, 255]);
   });
 
   test('transcodes with orientation, scale, and format change', () async {

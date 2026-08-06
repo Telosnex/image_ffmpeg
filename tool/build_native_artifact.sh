@@ -359,6 +359,7 @@ ${prefix}image_ffmpeg_build_info
 ${prefix}image_ffmpeg_has_ffmpeg
 ${prefix}image_ffmpeg_probe_image
 ${prefix}image_ffmpeg_decode_image_rgba
+${prefix}image_ffmpeg_decode_image_rgba_box_average
 ${prefix}image_ffmpeg_decode_jpeg_rgba
 ${prefix}image_ffmpeg_encode_jpeg_rgba
 ${prefix}image_ffmpeg_encode_jpeg_rgba_ex
@@ -384,7 +385,7 @@ elif [[ "$os" == windows ]]; then
 else
   version_script="$build_root/exports.map"
   {
-    echo 'IMAGE_FFMPEG_2 {'
+    echo 'IMAGE_FFMPEG_3 {'
     echo '  global:'
     sed 's/^/    /; s/$/;/' "$exports"
     echo '  local: *;'

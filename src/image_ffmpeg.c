@@ -27,9 +27,9 @@ IMAGE_FFMPEG_EXPORT uint32_t image_ffmpeg_abi_version(void) {
 
 IMAGE_FFMPEG_EXPORT const char *image_ffmpeg_build_info(void) {
 #if defined(IMAGE_FFMPEG_WITH_FFMPEG)
-  return "image_ffmpeg ABI 2; " LIBAVCODEC_IDENT;
+  return "image_ffmpeg ABI 3; " LIBAVCODEC_IDENT;
 #else
-  return "image_ffmpeg ABI 2; scaffold (FFmpeg not linked)";
+  return "image_ffmpeg ABI 3; scaffold (FFmpeg not linked)";
 #endif
 }
 
@@ -1032,6 +1032,126 @@ cleanup:
   (void)max_height;
   return IMAGE_FFMPEG_ERROR_FFMPEG_NOT_LINKED;
 #endif
+}
+
+static int32_t image_ffmpeg_box_average_rgba(
+    image_ffmpeg_image *image, uint32_t max_dimension, uint32_t alpha_mode) {
+  if (image == NULL || image->data == NULL || image->width == 0 ||
+      image->height == 0 || image->stride < image->width * 4u ||
+      image->pixel_format != IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888 ||
+      max_dimension == 0 ||
+      alpha_mode > IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY) {
+    return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
+  }
+
+  const uint32_t source_width = image->width;
+  const uint32_t source_height = image->height;
+  uint32_t destination_width = source_width;
+  uint32_t destination_height = source_height;
+  if (source_width > max_dimension || source_height > max_dimension) {
+    if (source_width >= source_height) {
+      destination_width = max_dimension;
+      destination_height = (uint32_t)(
+          ((uint64_t)source_height * max_dimension) / source_width);
+    } else {
+      destination_height = max_dimension;
+      destination_width = (uint32_t)(
+          ((uint64_t)source_width * max_dimension) / source_height);
+    }
+    if (destination_width == 0) destination_width = 1;
+    if (destination_height == 0) destination_height = 1;
+  }
+
+  const uint64_t destination_length =
+      (uint64_t)destination_width * destination_height * 4u;
+  if (destination_length > UINT32_MAX) {
+    return IMAGE_FFMPEG_ERROR_UNSUPPORTED;
+  }
+  uint8_t *destination = (uint8_t *)calloc(1, (size_t)destination_length);
+  if (destination == NULL) return IMAGE_FFMPEG_ERROR_OUT_OF_MEMORY;
+
+  for (uint32_t destination_y = 0; destination_y < destination_height;
+       destination_y++) {
+    const uint32_t source_y_start = (uint32_t)(
+        ((uint64_t)destination_y * source_height + destination_height - 1u) /
+        destination_height);
+    const uint32_t source_y_end = (uint32_t)(
+        ((uint64_t)(destination_y + 1u) * source_height +
+         destination_height - 1u) /
+        destination_height);
+    for (uint32_t destination_x = 0; destination_x < destination_width;
+         destination_x++) {
+      const uint32_t source_x_start = (uint32_t)(
+          ((uint64_t)destination_x * source_width + destination_width - 1u) /
+          destination_width);
+      const uint32_t source_x_end = (uint32_t)(
+          ((uint64_t)(destination_x + 1u) * source_width +
+           destination_width - 1u) /
+          destination_width);
+      uint64_t red = 0;
+      uint64_t green = 0;
+      uint64_t blue = 0;
+      uint64_t alpha = 0;
+      uint64_t count = 0;
+      for (uint32_t source_y = source_y_start; source_y < source_y_end;
+           source_y++) {
+        const uint8_t *pixel = image->data +
+                               (size_t)source_y * image->stride +
+                               (size_t)source_x_start * 4u;
+        for (uint32_t source_x = source_x_start; source_x < source_x_end;
+             source_x++, pixel += 4) {
+          if (alpha_mode == IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY &&
+              pixel[3] != 255u) {
+            continue;
+          }
+          red += pixel[0];
+          green += pixel[1];
+          blue += pixel[2];
+          alpha += pixel[3];
+          count++;
+        }
+      }
+      if (count == 0) continue;
+
+      const uint64_t half = count >> 1;
+      uint8_t *output_pixel =
+          destination +
+          ((size_t)destination_y * destination_width + destination_x) * 4u;
+      output_pixel[0] = (uint8_t)((red + half) / count);
+      output_pixel[1] = (uint8_t)((green + half) / count);
+      output_pixel[2] = (uint8_t)((blue + half) / count);
+      output_pixel[3] =
+          alpha_mode == IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY
+              ? 255u
+              : (uint8_t)((alpha + half) / count);
+    }
+  }
+
+  free(image->data);
+  image->data = destination;
+  image->length = (uint32_t)destination_length;
+  image->width = destination_width;
+  image->height = destination_height;
+  image->stride = destination_width * 4u;
+  return IMAGE_FFMPEG_OK;
+}
+
+IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba_box_average(
+    const uint8_t *input, uint32_t input_length, uint32_t max_dimension,
+    uint32_t alpha_mode, image_ffmpeg_image *output) {
+  if (output == NULL) return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
+  memset(output, 0, sizeof(*output));
+  if (input == NULL || input_length == 0 || max_dimension == 0 ||
+      alpha_mode > IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY) {
+    return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
+  }
+
+  int32_t status =
+      image_ffmpeg_decode_image_rgba(input, input_length, 0, 0, output);
+  if (status != IMAGE_FFMPEG_OK) return status;
+  status = image_ffmpeg_box_average_rgba(output, max_dimension, alpha_mode);
+  if (status != IMAGE_FFMPEG_OK) image_ffmpeg_image_release(output);
+  return status;
 }
 
 IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_jpeg_rgba(
