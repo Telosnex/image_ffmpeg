@@ -155,13 +155,10 @@ const _cases = [
 ];
 
 void main() {
-  late Ffmpeg ffmpeg;
-
   setUpAll(() async {
     final failures = Directory(_failureRoot);
     if (failures.existsSync()) failures.deleteSync(recursive: true);
-    ffmpeg = await Ffmpeg.load();
-    if (!ffmpeg.capabilities.canDecodeImage) {
+    if (!(await ImageFfmpeg.capabilities).canDecodeImage) {
       throw StateError(
         'The native conformance suite requires the bundled production '
         'FFmpeg artifact.',
@@ -169,12 +166,10 @@ void main() {
     }
   });
 
-  tearDownAll(() => ffmpeg.dispose());
-
   group('format corpus', () {
     for (final imageCase in _cases) {
       test('${imageCase.name}: probe metadata', () async {
-        final info = await ffmpeg.probeImage(await _readSource(imageCase));
+        final info = await ImageFfmpeg.probeImage(await _readSource(imageCase));
 
         expect(info.format, imageCase.format);
         expect((info.width, info.height), (imageCase.width, imageCase.height));
@@ -188,7 +183,9 @@ void main() {
       });
 
       test('${imageCase.name}: full decode matches visual golden', () async {
-        final decoded = await ffmpeg.decodeImage(await _readSource(imageCase));
+        final decoded = await ImageFfmpeg.decodeImage(
+          await _readSource(imageCase),
+        );
         expect(
           (decoded.width, decoded.height),
           (imageCase.width, imageCase.height),
@@ -215,7 +212,7 @@ void main() {
 
       test('${imageCase.name}: fit-within scaling geometry', () async {
         final bytes = await _readSource(imageCase);
-        final boxed = await ffmpeg.decodeImage(
+        final boxed = await ImageFfmpeg.decodeImage(
           bytes,
           maxWidth: 96,
           maxHeight: 96,
@@ -226,13 +223,13 @@ void main() {
         ), _fitWithin(imageCase.width, imageCase.height, 96, 96));
         expect(boxed.stride, boxed.width * 4);
 
-        final widthOnly = await ffmpeg.decodeImage(bytes, maxWidth: 96);
+        final widthOnly = await ImageFfmpeg.decodeImage(bytes, maxWidth: 96);
         expect((
           widthOnly.width,
           widthOnly.height,
         ), _fitWithin(imageCase.width, imageCase.height, 96, 0));
 
-        final noUpscale = await ffmpeg.decodeImage(
+        final noUpscale = await ImageFfmpeg.decodeImage(
           bytes,
           maxWidth: imageCase.width * 2,
           maxHeight: imageCase.height * 2,
@@ -250,7 +247,7 @@ void main() {
         final bytes = await File(
           '$_fixtureRoot/sources/test_animated.apng',
         ).readAsBytes();
-        expect((await ffmpeg.probeImage(bytes)).frameCount, 2);
+        expect((await ImageFfmpeg.probeImage(bytes)).frameCount, 2);
       },
       skip: 'Probe does not parse APNG acTL; FFmpeg reports nb_frames as zero.',
     );
@@ -261,7 +258,7 @@ void main() {
         final bytes = await File(
           '$_fixtureRoot/sources/test_animated.gif',
         ).readAsBytes();
-        expect((await ffmpeg.probeImage(bytes)).frameCount, 2);
+        expect((await ImageFfmpeg.probeImage(bytes)).frameCount, 2);
       },
       skip: 'The reduced image-pipe demuxer reports nb_frames as zero.',
     );

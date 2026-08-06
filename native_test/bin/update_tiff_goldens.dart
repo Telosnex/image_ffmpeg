@@ -33,30 +33,25 @@ Future<void> main() async {
           .toList()
         ..sort((a, b) => a.path.compareTo(b.path));
 
-  final ffmpeg = await Ffmpeg.load();
-  if (!ffmpeg.capabilities.canDecodeImage) {
+  if (!(await ImageFfmpeg.capabilities).canDecodeImage) {
     throw StateError('This tool requires the native linked-FFmpeg harness.');
   }
 
-  try {
-    for (final source in sources) {
-      final decoded = await ffmpeg.decodeImage(await source.readAsBytes());
-      final rgba = image.Image.fromBytes(
-        width: decoded.width,
-        height: decoded.height,
-        bytes: decoded.bytes.buffer,
-        bytesOffset: decoded.bytes.offsetInBytes,
-        rowStride: decoded.stride,
-        numChannels: 4,
-        order: image.ChannelOrder.rgba,
-      );
-      final name = source.uri.pathSegments.last;
-      final output = File('$_goldenDirectory/$name.png');
-      await output.writeAsBytes(image.encodePng(rgba));
-      stdout.writeln('$name -> ${output.path}');
-    }
-  } finally {
-    await ffmpeg.dispose();
+  for (final source in sources) {
+    final decoded = await ImageFfmpeg.decodeImage(await source.readAsBytes());
+    final rgba = image.Image.fromBytes(
+      width: decoded.width,
+      height: decoded.height,
+      bytes: decoded.bytes.buffer,
+      bytesOffset: decoded.bytes.offsetInBytes,
+      rowStride: decoded.stride,
+      numChannels: 4,
+      order: image.ChannelOrder.rgba,
+    );
+    final name = source.uri.pathSegments.last;
+    final output = File('$_goldenDirectory/$name.png');
+    await output.writeAsBytes(image.encodePng(rgba));
+    stdout.writeln('$name -> ${output.path}');
   }
 
   if (sources.length != 19) {

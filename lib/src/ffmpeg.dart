@@ -11,23 +11,32 @@ import 'models.dart';
 ///
 /// The API is asynchronous on every platform. Native decoding runs on a helper
 /// isolate; browser decoding runs in a Web Worker. Keeping that distinction
-/// below this class avoids platform-specific call sites.
-final class Ffmpeg {
-  Ffmpeg._(this._backend);
+/// below this class avoids platform-specific call sites. Initialization is
+/// lazy and shared; callers do not acquire or dispose a codec handle.
+abstract final class ImageFfmpeg {
+  static Future<FfmpegBackend>? _backend;
 
-  final FfmpegBackend _backend;
-  bool _disposed = false;
+  static Future<FfmpegBackend> _getBackend() => _backend ??= _loadBackend();
 
-  /// Loads and validates the native code asset or browser Wasm module.
-  static Future<Ffmpeg> load() async => Ffmpeg._(await platform.loadBackend());
+  static Future<FfmpegBackend> _loadBackend() async {
+    try {
+      return await platform.loadBackend();
+    } on Object {
+      // A failed browser Worker URL or ABI check must not poison future loads.
+      _backend = null;
+      rethrow;
+    }
+  }
 
-  FfmpegCapabilities get capabilities => _backend.capabilities;
+  /// Loads the shared backend if necessary and reports its capabilities.
+  static Future<FfmpegCapabilities> get capabilities async =>
+      (await _getBackend()).capabilities;
 
   /// Reads format, geometry, orientation, frame-count, and alpha metadata
   /// without allocating a decoded pixel buffer.
-  Future<ImageInfo> probeImage(Uint8List bytes) {
+  static Future<ImageInfo> probeImage(Uint8List bytes) async {
     _validateEncodedBytes(bytes);
-    return _backend.probeImage(bytes);
+    return (await _getBackend()).probeImage(bytes);
   }
 
   /// Probes and decodes arbitrary encoded image [bytes] to RGBA8888.
@@ -38,17 +47,17 @@ final class Ffmpeg {
   ///
   /// Throws [FfmpegException] when the bytes are not a recognized image, the
   /// build does not include its decoder, or decoding fails.
-  Future<RgbaImage> decodeImage(
+  static Future<RgbaImage> decodeImage(
     Uint8List bytes, {
     int maxWidth = 0,
     int maxHeight = 0,
-  }) {
+  }) async {
     _validateEncodedBytes(bytes);
     if (maxWidth < 0) throw ArgumentError.value(maxWidth, 'maxWidth');
     if (maxHeight < 0) throw ArgumentError.value(maxHeight, 'maxHeight');
     _validateUint32(maxWidth, 'maxWidth');
     _validateUint32(maxHeight, 'maxHeight');
-    return _backend.decodeImage(
+    return (await _getBackend()).decodeImage(
       bytes,
       maxWidth: maxWidth,
       maxHeight: maxHeight,
@@ -62,11 +71,11 @@ final class Ffmpeg {
   /// fits inside a [maxDimension] square without upscaling. Unlike
   /// [decodeImage]'s FFmpeg scaler, this operation has fixed cell boundaries
   /// and rounding semantics intended for stable color extraction.
-  Future<RgbaImage> decodeImageBoxAverage(
+  static Future<RgbaImage> decodeImageBoxAverage(
     Uint8List bytes, {
     required int maxDimension,
     BoxAverageAlphaMode alphaMode = BoxAverageAlphaMode.include,
-  }) {
+  }) async {
     _validateEncodedBytes(bytes);
     if (maxDimension <= 0) {
       throw ArgumentError.value(
@@ -76,7 +85,7 @@ final class Ffmpeg {
       );
     }
     _validateUint32(maxDimension, 'maxDimension');
-    return _backend.decodeImageBoxAverage(
+    return (await _getBackend()).decodeImageBoxAverage(
       bytes,
       maxDimension: maxDimension,
       alphaMode: alphaMode,
@@ -87,15 +96,15 @@ final class Ffmpeg {
   ///
   /// [quality] ranges from 1 (lowest) to 100 (highest). JPEG cannot represent
   /// alpha, so pixels are composited onto [backgroundColor] before encoding.
-  Future<Uint8List> encodeJpeg(
+  static Future<Uint8List> encodeJpeg(
     RgbaImage image, {
     int quality = 80,
     JpegChroma chroma = JpegChroma.yuv420,
     int backgroundColor = 0xffffffff,
-  }) {
+  }) async {
     _validateEncodeImage(image);
     _validateJpegOptions(quality, backgroundColor);
-    return _backend.encodeJpeg(
+    return (await _getBackend()).encodeJpeg(
       image,
       quality: quality,
       chroma: chroma,
@@ -106,16 +115,22 @@ final class Ffmpeg {
   /// Encodes RGBA8888 pixels as PNG while preserving alpha.
   ///
   /// [compressionLevel] ranges from 0 (fastest) to 9 (smallest).
-  Future<Uint8List> encodePng(RgbaImage image, {int compressionLevel = 6}) {
+  static Future<Uint8List> encodePng(
+    RgbaImage image, {
+    int compressionLevel = 6,
+  }) async {
     _validateEncodeImage(image);
     _validatePngCompression(compressionLevel);
-    return _backend.encodePng(image, compressionLevel: compressionLevel);
+    return (await _getBackend()).encodePng(
+      image,
+      compressionLevel: compressionLevel,
+    );
   }
 
   /// Decodes the first frame, optionally applies EXIF orientation, crops in
   /// post-orientation coordinates, performs fit-within scaling, and encodes—all
   /// within one native/Wasm call so RGBA pixels do not cross into Dart.
-  Future<EncodedImage> transcodeImage(
+  static Future<EncodedImage> transcodeImage(
     Uint8List bytes, {
     required ImageOutput output,
     int maxWidth = 0,
@@ -123,7 +138,7 @@ final class Ffmpeg {
     bool applyOrientation = true,
     ImageCrop? crop,
     bool passthroughIfUnchanged = false,
-  }) {
+  }) async {
     _validateEncodedBytes(bytes);
     if (maxWidth < 0) throw ArgumentError.value(maxWidth, 'maxWidth');
     if (maxHeight < 0) throw ArgumentError.value(maxHeight, 'maxHeight');
@@ -144,7 +159,7 @@ final class Ffmpeg {
       case PngImageOutput():
         _validatePngCompression(output.compressionLevel);
     }
-    return _backend.transcodeImage(
+    return (await _getBackend()).transcodeImage(
       bytes,
       output: output,
       maxWidth: maxWidth,
@@ -155,20 +170,19 @@ final class Ffmpeg {
     );
   }
 
-  void _validateEncodedBytes(Uint8List bytes) {
-    if (_disposed) throw StateError('Ffmpeg has been disposed');
+  static void _validateEncodedBytes(Uint8List bytes) {
     if (bytes.isEmpty) throw ArgumentError.value(bytes, 'bytes');
     _validateUint32(bytes.length, 'bytes.length');
   }
 
-  void _validateJpegOptions(int quality, int backgroundColor) {
+  static void _validateJpegOptions(int quality, int backgroundColor) {
     if (quality < 1 || quality > 100) {
       throw ArgumentError.value(quality, 'quality', 'must be from 1 to 100');
     }
     _validateUint32(backgroundColor, 'backgroundColor');
   }
 
-  void _validatePngCompression(int compressionLevel) {
+  static void _validatePngCompression(int compressionLevel) {
     if (compressionLevel < 0 || compressionLevel > 9) {
       throw ArgumentError.value(
         compressionLevel,
@@ -178,14 +192,13 @@ final class Ffmpeg {
     }
   }
 
-  void _validateUint32(int value, String name) {
+  static void _validateUint32(int value, String name) {
     if (value < 0 || value > 0xffffffff) {
       throw ArgumentError.value(value, name, 'must fit uint32');
     }
   }
 
-  void _validateEncodeImage(RgbaImage image) {
-    if (_disposed) throw StateError('Ffmpeg has been disposed');
+  static void _validateEncodeImage(RgbaImage image) {
     if (image.width > 0xffffffff ||
         image.height > 0xffffffff ||
         image.stride > 0xffffffff ||
@@ -196,15 +209,9 @@ final class Ffmpeg {
 
   /// Compatibility alias for the original JPEG-only API.
   @Deprecated('Use decodeImage')
-  Future<RgbaImage> decodeJpeg(
+  static Future<RgbaImage> decodeJpeg(
     Uint8List encoded, {
     int maxWidth = 0,
     int maxHeight = 0,
   }) => decodeImage(encoded, maxWidth: maxWidth, maxHeight: maxHeight);
-
-  Future<void> dispose() async {
-    if (_disposed) return;
-    _disposed = true;
-    await _backend.dispose();
-  }
 }

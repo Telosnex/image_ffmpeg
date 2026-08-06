@@ -58,7 +58,4 @@ final class _UnsupportedBackend implements FfmpegBackend {
     required ImageCrop? crop,
     required bool passthroughIfUnchanged,
   }) => throw const FfmpegException(-5, 'Unsupported platform');
-
-  @override
-  Future<void> dispose() async {}
 }

@@ -104,9 +104,6 @@ final class _NativeBackend implements FfmpegBackend {
       passthroughIfUnchanged,
     ),
   );
-
-  @override
-  Future<void> dispose() async {}
 }
 
 enum _EncodedFormat { jpeg, png }

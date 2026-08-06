@@ -17,17 +17,13 @@ const _tiffKnownGaps = {
 };
 
 void main() {
-  late Ffmpeg ffmpeg;
-
   setUpAll(() async {
-    ffmpeg = await Ffmpeg.load();
-    if (!ffmpeg.capabilities.canDecodeImage) {
+    if (!(await ImageFfmpeg.capabilities).canDecodeImage) {
       throw StateError('Reference comparisons require a linked FFmpeg build.');
     }
     final failures = Directory(corpusFailureRoot);
     if (failures.existsSync()) failures.deleteSync(recursive: true);
   });
-  tearDownAll(() => ffmpeg.dispose());
 
   group('PNGSuite baseline pixels', () {
     final baselineFiles = corpusFiles('png', '.png').where((file) {
@@ -38,7 +34,6 @@ void main() {
       final name = file.uri.pathSegments.last;
       test(name, () async {
         await _compareSourceWithPngReference(
-          ffmpeg,
           source: file,
           reference: File(
             '../test/fixtures/image_corpus/references/imagemagick/png/$name',
@@ -55,7 +50,6 @@ void main() {
       final name = file.uri.pathSegments.last;
       test(name, () async {
         await _compareSourceWithPngReference(
-          ffmpeg,
           source: file,
           reference: File(
             '../test/fixtures/image_corpus/references/imagemagick/apng/$name',
@@ -129,7 +123,7 @@ void main() {
         }
         await compareRgbaToReference(
           caseName: comparison.name,
-          actual: await ffmpeg.decodeImage(await source.readAsBytes()),
+          actual: await ImageFfmpeg.decodeImage(await source.readAsBytes()),
           reference: reference,
           maxChannelDelta: comparison.maxChannelDelta,
           maxMeanChannelDelta: comparison.maxMeanChannelDelta,
@@ -153,7 +147,7 @@ void main() {
         final source = File('$corpusRoot/jpg/$name');
         await compareRgbaToReference(
           caseName: 'JPEG_$name',
-          actual: await ffmpeg.decodeImage(await source.readAsBytes()),
+          actual: await ImageFfmpeg.decodeImage(await source.readAsBytes()),
           reference: reference,
           maxChannelDelta: 64,
           maxMeanChannelDelta: 2,
@@ -170,7 +164,6 @@ void main() {
       final name = file.uri.pathSegments.last;
       test(name, () async {
         await _compareSourceWithPngReference(
-          ffmpeg,
           source: file,
           reference: File(
             '../test/fixtures/image_corpus/goldens/tiff/$name.png',
@@ -199,8 +192,7 @@ final class _ReferenceCase {
   final double maxMeanChannelDelta;
 }
 
-Future<void> _compareSourceWithPngReference(
-  Ffmpeg ffmpeg, {
+Future<void> _compareSourceWithPngReference({
   required File source,
   required File reference,
   required int maxChannelDelta,
@@ -213,7 +205,7 @@ Future<void> _compareSourceWithPngReference(
   }
   await compareRgbaToReference(
     caseName: corpusRelativePath(source),
-    actual: await ffmpeg.decodeImage(bytes),
+    actual: await ImageFfmpeg.decodeImage(bytes),
     reference: referenceImage,
     maxChannelDelta: maxChannelDelta,
     maxMeanChannelDelta: maxMeanChannelDelta,

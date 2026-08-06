@@ -25,15 +25,11 @@ const _orientationBySuffix = {
 };
 
 void main() {
-  late Ffmpeg ffmpeg;
-
   setUpAll(() async {
-    ffmpeg = await Ffmpeg.load();
-    if (!ffmpeg.capabilities.canDecodeImage) {
+    if (!(await ImageFfmpeg.capabilities).canDecodeImage) {
       throw StateError('The image corpus requires a linked FFmpeg build.');
     }
   });
-  tearDownAll(() => ffmpeg.dispose());
 
   group('corpus integrity', () {
     test('expected fixture counts', () {
@@ -54,7 +50,7 @@ void main() {
       final name = file.uri.pathSegments.last;
       test(name, () async {
         final bytes = await file.readAsBytes();
-        final info = await ffmpeg.probeImage(bytes);
+        final info = await ImageFfmpeg.probeImage(bytes);
         expect(info.format, ImageFormat.jpeg);
         expect(info.width, greaterThan(0));
         expect(info.height, greaterThan(0));
@@ -79,7 +75,7 @@ void main() {
           ), swapsAxes ? (info.height, info.width) : (info.width, info.height));
         }
 
-        final decoded = await ffmpeg.decodeImage(bytes);
+        final decoded = await ImageFfmpeg.decodeImage(bytes);
         expectValidRgba(decoded, width: info.width, height: info.height);
       });
     }
@@ -94,9 +90,9 @@ void main() {
       final name = file.uri.pathSegments.last;
       test(name, () async {
         final bytes = await file.readAsBytes();
-        final info = await ffmpeg.probeImage(bytes);
+        final info = await ImageFfmpeg.probeImage(bytes);
         expect(info.format, ImageFormat.png);
-        final decoded = await ffmpeg.decodeImage(bytes);
+        final decoded = await ImageFfmpeg.decodeImage(bytes);
         expectValidRgba(decoded, width: info.width, height: info.height);
       });
     }
@@ -107,9 +103,9 @@ void main() {
       final name = file.uri.pathSegments.last;
       test(name, () async {
         final bytes = await file.readAsBytes();
-        final info = await ffmpeg.probeImage(bytes);
+        final info = await ImageFfmpeg.probeImage(bytes);
         expect(info.format, ImageFormat.apng);
-        final decoded = await ffmpeg.decodeImage(bytes);
+        final decoded = await ImageFfmpeg.decodeImage(bytes);
         expectValidRgba(decoded, width: info.width, height: info.height);
       });
     }
@@ -120,9 +116,9 @@ void main() {
       final name = file.uri.pathSegments.last;
       test(name, () async {
         final bytes = await file.readAsBytes();
-        final info = await ffmpeg.probeImage(bytes);
+        final info = await ImageFfmpeg.probeImage(bytes);
         expect(info.format, ImageFormat.gif);
-        final decoded = await ffmpeg.decodeImage(bytes);
+        final decoded = await ImageFfmpeg.decodeImage(bytes);
         expectValidRgba(decoded, width: info.width, height: info.height);
       });
     }
@@ -133,9 +129,9 @@ void main() {
       final name = file.uri.pathSegments.last;
       test(name, () async {
         final bytes = await file.readAsBytes();
-        final info = await ffmpeg.probeImage(bytes);
+        final info = await ImageFfmpeg.probeImage(bytes);
         expect(info.format, ImageFormat.webp);
-        final decoded = await ffmpeg.decodeImage(bytes);
+        final decoded = await ImageFfmpeg.decodeImage(bytes);
         expectValidRgba(decoded, width: info.width, height: info.height);
       });
     }
@@ -148,7 +144,7 @@ void main() {
         final bytes = await file.readAsBytes();
         if (_tiffProbeUnsupported.contains(name)) {
           await expectLater(
-            ffmpeg.probeImage(bytes),
+            ImageFfmpeg.probeImage(bytes),
             throwsA(
               isA<FfmpegException>().having(
                 (error) => error.status,
@@ -159,9 +155,9 @@ void main() {
           );
           return;
         }
-        final info = await ffmpeg.probeImage(bytes);
+        final info = await ImageFfmpeg.probeImage(bytes);
         expect(info.format, ImageFormat.tiff);
-        final decoded = await ffmpeg.decodeImage(bytes);
+        final decoded = await ImageFfmpeg.decodeImage(bytes);
         expectValidRgba(decoded, width: info.width, height: info.height);
       });
     }
@@ -176,9 +172,9 @@ void main() {
         final name = file.uri.pathSegments.last;
         test(name, () async {
           final bytes = await file.readAsBytes();
-          final info = await ffmpeg.probeImage(bytes);
+          final info = await ImageFfmpeg.probeImage(bytes);
           expect(info.format, format.$4);
-          final decoded = await ffmpeg.decodeImage(bytes);
+          final decoded = await ImageFfmpeg.decodeImage(bytes);
           expectValidRgba(decoded, width: info.width, height: info.height);
         });
       }

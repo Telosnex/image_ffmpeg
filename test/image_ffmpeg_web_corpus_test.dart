@@ -36,19 +36,13 @@ const _orientationBySuffix = {
 };
 
 void main() {
-  late Ffmpeg ffmpeg;
-
   setUpAll(() async {
-    FfmpegWeb.workerUri = servedWorkerUri;
-    ffmpeg = await Ffmpeg.load();
-    if (!ffmpeg.capabilities.canDecodeImage) {
+    ImageFfmpegWeb.workerUri = servedWorkerUri;
+    if (!(await ImageFfmpeg.capabilities).canDecodeImage) {
       throw StateError('The browser corpus requires the bundled Wasm build.');
     }
   });
-  tearDownAll(() async {
-    await ffmpeg.dispose();
-    FfmpegWeb.workerUri = null;
-  });
+  tearDownAll(() => ImageFfmpegWeb.workerUri = null);
 
   group('browser corpus integrity', () {
     test('generated fixture counts match the native corpus', () {
@@ -68,7 +62,7 @@ void main() {
     for (final path in imageCorpusJpegFixtures) {
       test(path, () async {
         final bytes = await _fetchCorpusSource(path);
-        final info = await ffmpeg.probeImage(bytes);
+        final info = await ImageFfmpeg.probeImage(bytes);
         expect(info.format, ImageFormat.jpeg);
         expect(info.width, greaterThan(0));
         expect(info.height, greaterThan(0));
@@ -86,7 +80,7 @@ void main() {
           ), swapsAxes ? (info.height, info.width) : (info.width, info.height));
         }
 
-        final decoded = await ffmpeg.decodeImage(bytes);
+        final decoded = await ImageFfmpeg.decodeImage(bytes);
         _expectValidRgba(decoded, width: info.width, height: info.height);
       });
     }
@@ -97,7 +91,7 @@ void main() {
       (path) => !_basename(path).startsWith('x'),
     )) {
       test(path, () async {
-        await _expectProbeAndDecode(ffmpeg, path, ImageFormat.png);
+        await _expectProbeAndDecode(path, ImageFormat.png);
       });
     }
   });
@@ -105,7 +99,7 @@ void main() {
   group('APNG first-frame corpus', () {
     for (final path in imageCorpusApngFixtures) {
       test(path, () async {
-        await _expectProbeAndDecode(ffmpeg, path, ImageFormat.apng);
+        await _expectProbeAndDecode(path, ImageFormat.apng);
       });
     }
   });
@@ -113,7 +107,7 @@ void main() {
   group('GIF first-frame corpus', () {
     for (final path in imageCorpusGifFixtures) {
       test(path, () async {
-        await _expectProbeAndDecode(ffmpeg, path, ImageFormat.gif);
+        await _expectProbeAndDecode(path, ImageFormat.gif);
       });
     }
   });
@@ -121,7 +115,7 @@ void main() {
   group('WebP first-frame corpus', () {
     for (final path in imageCorpusWebpFixtures) {
       test(path, () async {
-        await _expectProbeAndDecode(ffmpeg, path, ImageFormat.webp);
+        await _expectProbeAndDecode(path, ImageFormat.webp);
       });
     }
   });
@@ -132,7 +126,7 @@ void main() {
         final bytes = await _fetchCorpusSource(path);
         if (_tiffKnownGaps.contains(_basename(path))) {
           await expectLater(
-            ffmpeg.probeImage(bytes),
+            ImageFfmpeg.probeImage(bytes),
             throwsA(
               isA<FfmpegException>().having(
                 (error) => error.status,
@@ -143,9 +137,9 @@ void main() {
           );
           return;
         }
-        final info = await ffmpeg.probeImage(bytes);
+        final info = await ImageFfmpeg.probeImage(bytes);
         expect(info.format, ImageFormat.tiff);
-        final decoded = await ffmpeg.decodeImage(bytes);
+        final decoded = await ImageFfmpeg.decodeImage(bytes);
         _expectValidRgba(decoded, width: info.width, height: info.height);
       });
     }
@@ -158,7 +152,7 @@ void main() {
     group('${format.$1} corpus', () {
       for (final path in format.$3) {
         test(path, () async {
-          await _expectProbeAndDecode(ffmpeg, path, format.$2);
+          await _expectProbeAndDecode(path, format.$2);
         });
       }
     });
@@ -174,8 +168,8 @@ void main() {
     for (final path in paths) {
       test(path, () async {
         final source = await _fetchCorpusSource(path);
-        await _probeWithoutCrashing(ffmpeg, source);
-        await _decodeWithoutCrashing(ffmpeg, source);
+        await _probeWithoutCrashing(source);
+        await _decodeWithoutCrashing(source);
       }, timeout: const Timeout(Duration(seconds: 10)));
     }
   });
@@ -188,7 +182,6 @@ void main() {
       test(path, () async {
         final name = _basename(path);
         await _compareCorpusReference(
-          ffmpeg,
           sourcePath: path,
           referencePath: 'references/imagemagick/png/$name',
           maxChannelDelta: 2,
@@ -203,7 +196,6 @@ void main() {
       test(path, () async {
         final name = _basename(path);
         await _compareCorpusReference(
-          ffmpeg,
           sourcePath: path,
           referencePath: 'references/imagemagick/apng/$name',
           maxChannelDelta: 2,
@@ -266,7 +258,7 @@ void main() {
       ),
     ]) {
       test(comparison.name, () async {
-        final actual = await ffmpeg.decodeImage(
+        final actual = await ImageFfmpeg.decodeImage(
           await _fetchCorpusSource(comparison.source),
         );
         compareRgbaToPng(
@@ -290,7 +282,7 @@ void main() {
       'testprog.jpg',
     ]) {
       test(name, () async {
-        final actual = await ffmpeg.decodeImage(
+        final actual = await ImageFfmpeg.decodeImage(
           await _fetchCorpusSource('jpg/$name'),
         );
         compareRgbaToPng(
@@ -310,7 +302,6 @@ void main() {
     )) {
       test(path, () async {
         await _compareCorpusReference(
-          ffmpeg,
           sourcePath: path,
           referencePath: 'goldens/tiff/${_basename(path)}.png',
           maxChannelDelta: 0,
@@ -323,7 +314,7 @@ void main() {
   group('curated format corpus', () {
     for (final imageCase in _formatCases) {
       test('${imageCase.name}: probe metadata', () async {
-        final info = await ffmpeg.probeImage(
+        final info = await ImageFfmpeg.probeImage(
           await _fetchFormatSource(imageCase.source),
         );
         expect(info.format, imageCase.format);
@@ -338,7 +329,7 @@ void main() {
       });
 
       test('${imageCase.name}: full decode matches visual golden', () async {
-        final decoded = await ffmpeg.decodeImage(
+        final decoded = await ImageFfmpeg.decodeImage(
           await _fetchFormatSource(imageCase.source),
         );
         _expectValidRgba(
@@ -359,7 +350,7 @@ void main() {
 
       test('${imageCase.name}: fit-within scaling geometry', () async {
         final bytes = await _fetchFormatSource(imageCase.source);
-        final boxed = await ffmpeg.decodeImage(
+        final boxed = await ImageFfmpeg.decodeImage(
           bytes,
           maxWidth: 96,
           maxHeight: 96,
@@ -370,13 +361,13 @@ void main() {
         ), _fitWithin(imageCase.width, imageCase.height, 96, 96));
         expect(boxed.stride, boxed.width * 4);
 
-        final widthOnly = await ffmpeg.decodeImage(bytes, maxWidth: 96);
+        final widthOnly = await ImageFfmpeg.decodeImage(bytes, maxWidth: 96);
         expect((
           widthOnly.width,
           widthOnly.height,
         ), _fitWithin(imageCase.width, imageCase.height, 96, 0));
 
-        final noUpscale = await ffmpeg.decodeImage(
+        final noUpscale = await ImageFfmpeg.decodeImage(
           bytes,
           maxWidth: imageCase.width * 2,
           maxHeight: imageCase.height * 2,
@@ -390,15 +381,11 @@ void main() {
   });
 }
 
-Future<void> _expectProbeAndDecode(
-  Ffmpeg ffmpeg,
-  String path,
-  ImageFormat format,
-) async {
+Future<void> _expectProbeAndDecode(String path, ImageFormat format) async {
   final bytes = await _fetchCorpusSource(path);
-  final info = await ffmpeg.probeImage(bytes);
+  final info = await ImageFfmpeg.probeImage(bytes);
   expect(info.format, format);
-  final decoded = await ffmpeg.decodeImage(bytes);
+  final decoded = await ImageFfmpeg.decodeImage(bytes);
   _expectValidRgba(decoded, width: info.width, height: info.height);
 }
 
@@ -411,9 +398,9 @@ void _expectValidRgba(RgbaImage decoded, {int? width, int? height}) {
   expect(decoded.bytes.length, decoded.stride * decoded.height);
 }
 
-Future<void> _probeWithoutCrashing(Ffmpeg ffmpeg, Uint8List source) async {
+Future<void> _probeWithoutCrashing(Uint8List source) async {
   try {
-    final info = await ffmpeg.probeImage(source);
+    final info = await ImageFfmpeg.probeImage(source);
     expect(info.width, greaterThan(0));
     expect(info.height, greaterThan(0));
   } on FfmpegException catch (error) {
@@ -421,22 +408,23 @@ Future<void> _probeWithoutCrashing(Ffmpeg ffmpeg, Uint8List source) async {
   }
 }
 
-Future<void> _decodeWithoutCrashing(Ffmpeg ffmpeg, Uint8List source) async {
+Future<void> _decodeWithoutCrashing(Uint8List source) async {
   try {
-    _expectValidRgba(await ffmpeg.decodeImage(source));
+    _expectValidRgba(await ImageFfmpeg.decodeImage(source));
   } on FfmpegException catch (error) {
     expect(error.status, isNegative);
   }
 }
 
-Future<void> _compareCorpusReference(
-  Ffmpeg ffmpeg, {
+Future<void> _compareCorpusReference({
   required String sourcePath,
   required String referencePath,
   required int maxChannelDelta,
   required double maxMeanChannelDelta,
 }) async {
-  final actual = await ffmpeg.decodeImage(await _fetchCorpusSource(sourcePath));
+  final actual = await ImageFfmpeg.decodeImage(
+    await _fetchCorpusSource(sourcePath),
+  );
   compareRgbaToPng(
     caseName: sourcePath,
     actual: actual,

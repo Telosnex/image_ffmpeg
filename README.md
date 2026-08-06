@@ -25,30 +25,29 @@ thread in a module Worker.
 ## API
 
 ```dart
-final ffmpeg = await Ffmpeg.load();
-print(ffmpeg.capabilities);
+print(await ImageFfmpeg.capabilities);
 
-final info = await ffmpeg.probeImage(arbitraryBytes);
+final info = await ImageFfmpeg.probeImage(arbitraryBytes);
 
-final image = await ffmpeg.decodeImage(
+final image = await ImageFfmpeg.decodeImage(
   arbitraryBytes,
   maxWidth: 96,
   maxHeight: 96,
 );
-final paletteSource = await ffmpeg.decodeImageBoxAverage(
+final paletteSource = await ImageFfmpeg.decodeImageBoxAverage(
   arbitraryBytes,
   maxDimension: 96,
   alphaMode: BoxAverageAlphaMode.opaqueOnly,
 );
-final jpeg = await ffmpeg.encodeJpeg(
+final jpeg = await ImageFfmpeg.encodeJpeg(
   image,
   quality: 90,
   chroma: JpegChroma.yuv444,
 );
-final png = await ffmpeg.encodePng(image, compressionLevel: 9);
+final png = await ImageFfmpeg.encodePng(image, compressionLevel: 9);
 
 // Keep the decoded RGBA intermediate inside native/Wasm memory.
-final thumbnail = await ffmpeg.transcodeImage(
+final thumbnail = await ImageFfmpeg.transcodeImage(
   arbitraryBytes,
   output: const ImageOutput.jpeg(
     quality: 80,
@@ -59,12 +58,11 @@ final thumbnail = await ffmpeg.transcodeImage(
   applyOrientation: true,
   passthroughIfUnchanged: true,
 );
-
-await ffmpeg.dispose();
 ```
 
-The API is asynchronous on every platform so native work can live on a helper
-isolate and browser work can live in a Web Worker.
+The API is asynchronous and lazily initialized on every platform. Native work
+runs on a helper isolate; browser work uses one package-managed Worker and Wasm
+module for the page lifetime. Callers do not load or dispose codec handles.
 
 ## Why a shim instead of generated FFmpeg bindings?
 
@@ -130,16 +128,16 @@ requested. AVIF grids and ICC color management are not currently applied.
 Flutter web apps need no manual setup: the package declares its Worker,
 JavaScript adapter, Emscripten module, and Wasm binary as package assets.
 `flutter build web` places them under
-`assets/packages/image_ffmpeg/web/`, and `Ffmpeg.load()` resolves that path
-against the document base URI. This works with a non-root Flutter
-`--base-href` as well as at `/`.
+`assets/packages/image_ffmpeg/web/`, and the first `ImageFfmpeg` operation
+resolves that path against the document base URI. This works with a non-root
+Flutter `--base-href` as well as at `/`.
 
 Plain Dart browser applications must serve the four sibling files from
-`lib/web/` and configure their URL before loading:
+`lib/web/` and configure their URL before the first operation:
 
 ```dart
-FfmpegWeb.workerUri = Uri.parse('/vendor/image_ffmpeg/image_ffmpeg_worker.mjs');
-final ffmpeg = await Ffmpeg.load();
+ImageFfmpegWeb.workerUri = Uri.parse('/vendor/image_ffmpeg/image_ffmpeg_worker.mjs');
+final info = await ImageFfmpeg.probeImage(bytes);
 ```
 
 Keep all four files together because the module Worker imports the loader and
@@ -197,11 +195,14 @@ dart pub get
 dart run ffigen --config ffigen.yaml
 dart test test/image_ffmpeg_test.dart
 dart test -p chrome --concurrency=1 \
-  test/image_ffmpeg_web_test.dart test/image_ffmpeg_web_corpus_test.dart
+  test/image_ffmpeg_web_bad_worker_test.dart test/image_ffmpeg_web_test.dart \
+  test/image_ffmpeg_web_corpus_test.dart
 dart test -p chrome -c dart2wasm --concurrency=1 \
-  test/image_ffmpeg_web_test.dart test/image_ffmpeg_web_corpus_test.dart
+  test/image_ffmpeg_web_bad_worker_test.dart test/image_ffmpeg_web_test.dart \
+  test/image_ffmpeg_web_corpus_test.dart
 dart test -p safari --concurrency=1 \
-  test/image_ffmpeg_web_test.dart test/image_ffmpeg_web_corpus_test.dart # macOS
+  test/image_ffmpeg_web_bad_worker_test.dart test/image_ffmpeg_web_test.dart \
+  test/image_ffmpeg_web_corpus_test.dart # macOS
 dart analyze
 ```
 

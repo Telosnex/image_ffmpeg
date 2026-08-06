@@ -1,8 +1,8 @@
-/// Browser-only configuration for [Ffmpeg.load].
+/// Browser-only configuration for [ImageFfmpeg].
 ///
 /// Native platforms ignore these settings entirely.
-abstract final class FfmpegWeb {
-  /// Where to load `image_ffmpeg_worker.mjs` from, before [Ffmpeg.load].
+abstract final class ImageFfmpegWeb {
+  /// Where to load `image_ffmpeg_worker.mjs` from.
   ///
   /// When null, the Flutter web asset location
   /// `assets/packages/image_ffmpeg/web/image_ffmpeg_worker.mjs` is resolved
@@ -14,5 +14,7 @@ abstract final class FfmpegWeb {
   /// same-origin and point this at the served `image_ffmpeg_worker.mjs`. The
   /// worker imports `image_ffmpeg_module.mjs` and `image_ffmpeg_module.wasm`
   /// relative to its own URL, so the three files must stay siblings.
+  /// Set this before the first [ImageFfmpeg] operation; the shared page-wide
+  /// Worker keeps its original URL afterward.
   static Uri? workerUri;
 }

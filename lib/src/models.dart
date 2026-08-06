@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-/// Execution engine behind [Ffmpeg].
+/// Execution engine behind [ImageFfmpeg].
 enum FfmpegRuntime {
   /// A code asset called through `dart:ffi`.
   native,
@@ -144,7 +144,7 @@ final class ImageCrop {
   final int height;
 }
 
-/// Output settings for [Ffmpeg.transcodeImage].
+/// Output settings for [ImageFfmpeg.transcodeImage].
 sealed class ImageOutput {
   const ImageOutput();
 

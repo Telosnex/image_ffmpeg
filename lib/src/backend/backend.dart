@@ -38,6 +38,4 @@ abstract interface class FfmpegBackend {
     required ImageCrop? crop,
     required bool passthroughIfUnchanged,
   });
-
-  Future<void> dispose();
 }

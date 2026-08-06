@@ -26,7 +26,7 @@ const _flutterAssetWorkerUrl =
 /// large images cross threads without structured-clone copies.
 Future<FfmpegBackend> loadBackend() async {
   final configuredUri =
-      FfmpegWeb.workerUri ?? Uri.parse(_flutterAssetWorkerUrl);
+      ImageFfmpegWeb.workerUri ?? Uri.parse(_flutterAssetWorkerUrl);
   final workerUrl = Uri.parse(
     _documentBaseUri,
   ).resolveUri(configuredUri).toString();
@@ -51,7 +51,7 @@ Future<FfmpegBackend> loadBackend() async {
     );
     return backend;
   } on Object {
-    await backend.dispose();
+    backend._terminate();
     rethrow;
   }
 }
@@ -67,7 +67,7 @@ final class _WebBackend implements FfmpegBackend {
   final _Worker _worker;
   final _pending = <int, Completer<JSObject>>{};
   int _nextRequestId = 0;
-  bool _disposed = false;
+  bool _terminated = false;
   late final FfmpegCapabilities _capabilities;
 
   @override
@@ -249,13 +249,16 @@ final class _WebBackend implements FfmpegBackend {
     );
   }
 
-  @override
-  Future<void> dispose() async {
-    if (_disposed) return;
-    _disposed = true;
+  void _terminate([FfmpegException? error]) {
+    if (_terminated) return;
+    _terminated = true;
     _worker.terminate();
     _failAllPending(
-      const FfmpegException(-1, 'Ffmpeg was disposed with requests in flight'),
+      error ??
+          const FfmpegException(
+            -2,
+            'image_ffmpeg Worker terminated during initialization',
+          ),
     );
   }
 
@@ -263,7 +266,9 @@ final class _WebBackend implements FfmpegBackend {
     _WorkerRequest Function(int id) build, {
     JSArrayBuffer? transfer,
   }) {
-    if (_disposed) throw StateError('Ffmpeg has been disposed');
+    if (_terminated) {
+      throw StateError('image_ffmpeg Worker terminated unexpectedly');
+    }
     final id = _nextRequestId++;
     final completer = Completer<JSObject>();
     _pending[id] = completer;
@@ -302,15 +307,13 @@ final class _WebBackend implements FfmpegBackend {
   /// level, for example when the assets are not bundled or served.
   void _handleError(_ErrorEvent event) {
     final detail = event.message;
-    _worker.terminate();
-    _disposed = true;
-    _failAllPending(
+    _terminate(
       FfmpegException(
         -2,
         'image_ffmpeg worker failed to load from $_workerUrl'
         '${detail == null || detail.isEmpty ? '' : ': $detail'}. Flutter web '
         'apps bundle it automatically; other embedders must serve '
-        'package:image_ffmpeg/web/ and set FfmpegWeb.workerUri.',
+        'package:image_ffmpeg/web/ and set ImageFfmpegWeb.workerUri.',
       ),
     );
   }

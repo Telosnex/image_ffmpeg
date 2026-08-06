@@ -1,5 +1,8 @@
 ## 0.0.1
 
+- Replace the resource-handle-shaped `load()`/`dispose()` API with lazy static
+  operations. Browser Worker/Wasm resources are package-managed and live for
+  the page lifetime instead of being repeatedly initialized and destroyed.
 - Add deterministic integer-only box-average decode with configurable alpha
   handling while retaining the full-resolution RGBA intermediate inside the
   native helper isolate or browser Worker.
@@ -18,8 +21,8 @@
 - Connect the browser backend to a module Worker with request IDs, mapped
   errors, and transferable input/output buffers.
 - Bundle the Worker, Emscripten adapter, generated JavaScript module, and Wasm
-  binary automatically in Flutter web applications; expose `FfmpegWeb.workerUri`
-  for plain-Dart/custom hosting.
+  binary automatically in Flutter web applications; expose
+  `ImageFfmpegWeb.workerUri` for plain-Dart/custom hosting.
 - Cover the browser backend in real Chrome under dart2js and Dart2Wasm.
 - Add unattended real-Safari dart2js coverage with a package:test launcher that
   bypasses Safari's local-file confirmation dialog.

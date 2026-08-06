@@ -6,50 +6,53 @@ import 'package:image_ffmpeg/image_ffmpeg.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('loads and validates the native code asset ABI', () async {
-    final ffmpeg = await Ffmpeg.load();
-    addTearDown(ffmpeg.dispose);
+  test('capabilities are initialized lazily and shared', () async {
+    expect(
+      identical(await ImageFfmpeg.capabilities, await ImageFfmpeg.capabilities),
+      isTrue,
+    );
+  });
 
-    expect(ffmpeg.capabilities.runtime, FfmpegRuntime.native);
-    expect(ffmpeg.capabilities.abiVersion, 3);
-    expect(ffmpeg.capabilities.buildInfo, contains('image_ffmpeg ABI 3'));
+  test('loads and validates the native code asset ABI', () async {
+    final capabilities = await ImageFfmpeg.capabilities;
+    expect(capabilities.runtime, FfmpegRuntime.native);
+    expect(capabilities.abiVersion, 3);
+    expect(capabilities.buildInfo, contains('image_ffmpeg ABI 3'));
   });
 
   test('bundles the production FFmpeg capability', () async {
-    final ffmpeg = await Ffmpeg.load();
-    addTearDown(ffmpeg.dispose);
-
-    expect(ffmpeg.capabilities.canDecodeImage, isTrue);
-    expect(ffmpeg.capabilities.canEncodeJpeg, isTrue);
-    expect(ffmpeg.capabilities.canEncodePng, isTrue);
-    expect(ffmpeg.capabilities.buildInfo, contains('Lavc63.1.100'));
+    final capabilities = await ImageFfmpeg.capabilities;
+    expect(capabilities.canDecodeImage, isTrue);
+    expect(capabilities.canEncodeJpeg, isTrue);
+    expect(capabilities.canEncodePng, isTrue);
+    expect(capabilities.buildInfo, contains('Lavc63.1.100'));
   });
 
   test('decodes the first animated WebP frame', () async {
-    final ffmpeg = await Ffmpeg.load();
-    addTearDown(ffmpeg.dispose);
     final bytes = await File(
       'test/fixtures/image_formats/sources/test_animated.webp',
     ).readAsBytes();
 
-    final info = await ffmpeg.probeImage(bytes);
+    final info = await ImageFfmpeg.probeImage(bytes);
     expect(info.format, ImageFormat.webp);
     expect((info.width, info.height), (800, 800));
     expect(info.hasAlpha, isTrue);
 
-    final image = await ffmpeg.decodeImage(bytes, maxWidth: 96, maxHeight: 96);
+    final image = await ImageFfmpeg.decodeImage(
+      bytes,
+      maxWidth: 96,
+      maxHeight: 96,
+    );
     expect((image.width, image.height), (96, 96));
     expect(image.bytes.length, 96 * 96 * 4);
   });
 
   test('probes supported image bytes when FFmpeg is linked', () async {
-    final ffmpeg = await Ffmpeg.load();
-    addTearDown(ffmpeg.dispose);
     final png = base64Decode(
       'iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAIAAADwyuo0AAAACXBIWXMAAAABAAAA'
       'AQBPJcTWAAAAEElEQVR4nGP4w8AARwzIHABuWgfhm8LBSgAAAABJRU5ErkJggg==',
     );
-    final image = await ffmpeg.decodeImage(png, maxWidth: 2, maxHeight: 2);
+    final image = await ImageFfmpeg.decodeImage(png, maxWidth: 2, maxHeight: 2);
     expect((image.width, image.height), (2, 1));
     expect(image.bytes.length, 8);
 
@@ -62,7 +65,11 @@ void main() {
       'AAATY29scm5jbHgAAgACAAIAAAAAF2lwbWEAAAAAAAAAAQABBAECgwQAAAAjbWRh'
       'dAoFGAQ7YBAyEhgAAABQAABAA1Lt5xf080WmIA==',
     );
-    final avifImage = await ffmpeg.decodeImage(avif, maxWidth: 2, maxHeight: 2);
+    final avifImage = await ImageFfmpeg.decodeImage(
+      avif,
+      maxWidth: 2,
+      maxHeight: 2,
+    );
     expect((avifImage.width, avifImage.height), (2, 1));
     expect(avifImage.bytes.length, 8);
 
@@ -79,7 +86,7 @@ void main() {
       'CgUYET92FTISFkAYYUC13uQdZggHNJ0zABRAEgAKBTgRP3YJMioWQAYYYYUAvKyX'
       'N6bT7I/szENB5h6dvRcbHyUW2xJMCWIeAeBeCdeJz4A=',
     );
-    final alphaImage = await ffmpeg.decodeImage(
+    final alphaImage = await ImageFfmpeg.decodeImage(
       alphaAvif,
       maxWidth: 16,
       maxHeight: 16,
@@ -100,7 +107,7 @@ void main() {
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/////////////////////wAAAAAAAAAA'
       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     );
-    final psdImage = await ffmpeg.decodeImage(psd);
+    final psdImage = await ImageFfmpeg.decodeImage(psd);
     expect((psdImage.width, psdImage.height), (4, 2));
     expect(psdImage.bytes.length, 32);
     expect(psdImage.bytes.sublist(0, 4), [255, 0, 0, 255]);
@@ -112,7 +119,7 @@ void main() {
       'AAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAP8AAP8AAP8AAP8AAAD/AAD/AAD/AAD/'
       'gAAAABAAAAA=',
     );
-    final icoImage = await ffmpeg.decodeImage(ico);
+    final icoImage = await ImageFfmpeg.decodeImage(ico);
     expect((icoImage.width, icoImage.height), (4, 2));
     expect(icoImage.bytes.length, 32);
     expect(
@@ -121,7 +128,7 @@ void main() {
     );
 
     await expectLater(
-      ffmpeg.decodeImage(Uint8List.fromList('not an image'.codeUnits)),
+      ImageFfmpeg.decodeImage(Uint8List.fromList('not an image'.codeUnits)),
       throwsA(
         isA<FfmpegException>().having((error) => error.status, 'status', -6),
       ),
@@ -129,8 +136,6 @@ void main() {
   });
 
   test('probes metadata and performs fused transcodes', () async {
-    final ffmpeg = await Ffmpeg.load();
-    addTearDown(ffmpeg.dispose);
     final source = RgbaImage(
       width: 3,
       height: 2,
@@ -162,19 +167,19 @@ void main() {
         255,
       ]),
     );
-    final jpeg = await ffmpeg.encodeJpeg(
+    final jpeg = await ImageFfmpeg.encodeJpeg(
       source,
       quality: 100,
       chroma: JpegChroma.yuv444,
     );
-    final decodedJpeg = await ffmpeg.decodeImage(jpeg);
+    final decodedJpeg = await ImageFfmpeg.decodeImage(jpeg);
     for (var orientation = 1; orientation <= 8; orientation++) {
       final oriented = _withExifOrientation(jpeg, orientation);
-      final baked = await ffmpeg.transcodeImage(
+      final baked = await ImageFfmpeg.transcodeImage(
         oriented,
         output: const ImageOutput.png(),
       );
-      final bakedRgba = await ffmpeg.decodeImage(baked.bytes);
+      final bakedRgba = await ImageFfmpeg.decodeImage(baked.bytes);
       final expected = _orientRgba(decodedJpeg, orientation);
       expect(
         (bakedRgba.width, bakedRgba.height),
@@ -184,7 +189,7 @@ void main() {
     }
 
     final orientedJpeg = _withExifOrientation(jpeg, 6);
-    final info = await ffmpeg.probeImage(orientedJpeg);
+    final info = await ImageFfmpeg.probeImage(orientedJpeg);
     expect(info.format, ImageFormat.jpeg);
     expect((info.width, info.height), (3, 2));
     expect((info.displayWidth, info.displayHeight), (2, 3));
@@ -192,7 +197,7 @@ void main() {
     expect(info.frameCount, 1);
     expect(info.hasAlpha, false);
 
-    final transcoded = await ffmpeg.transcodeImage(
+    final transcoded = await ImageFfmpeg.transcodeImage(
       orientedJpeg,
       output: const ImageOutput.png(compressionLevel: 9),
       crop: const ImageCrop(x: 0, y: 1, width: 2, height: 2),
@@ -203,8 +208,8 @@ void main() {
     expect((transcoded.width, transcoded.height), (1, 1));
     expect(transcoded.bytes.sublist(0, 8), [137, 80, 78, 71, 13, 10, 26, 10]);
 
-    final png = await ffmpeg.encodePng(source);
-    final passthrough = await ffmpeg.transcodeImage(
+    final png = await ImageFfmpeg.encodePng(source);
+    final passthrough = await ImageFfmpeg.transcodeImage(
       png,
       output: const ImageOutput.png(),
       passthroughIfUnchanged: true,
@@ -212,7 +217,7 @@ void main() {
     expect(passthrough.bytes, png);
     expect((passthrough.width, passthrough.height), (3, 2));
 
-    final fusedJpeg = await ffmpeg.transcodeImage(
+    final fusedJpeg = await ImageFfmpeg.transcodeImage(
       png,
       output: const ImageOutput.jpeg(quality: 90, chroma: JpegChroma.yuv444),
     );
@@ -221,8 +226,6 @@ void main() {
   });
 
   test('encodes JPEG and PNG when FFmpeg is linked', () async {
-    final ffmpeg = await Ffmpeg.load();
-    addTearDown(ffmpeg.dispose);
     final rgba = RgbaImage(
       width: 4,
       height: 2,
@@ -271,17 +274,17 @@ void main() {
       ]),
     );
 
-    final png = await ffmpeg.encodePng(rgba, compressionLevel: 9);
+    final png = await ImageFfmpeg.encodePng(rgba, compressionLevel: 9);
     expect(png.sublist(0, 8), [137, 80, 78, 71, 13, 10, 26, 10]);
-    final pngRoundTrip = await ffmpeg.decodeImage(png);
+    final pngRoundTrip = await ImageFfmpeg.decodeImage(png);
     expect((pngRoundTrip.width, pngRoundTrip.height), (4, 2));
     expect(pngRoundTrip.bytes, [
       ...rgba.bytes.sublist(0, 16),
       ...rgba.bytes.sublist(20, 36),
     ]);
 
-    final jpeg = await ffmpeg.encodeJpeg(rgba, quality: 80);
-    final jpeg444 = await ffmpeg.encodeJpeg(
+    final jpeg = await ImageFfmpeg.encodeJpeg(rgba, quality: 80);
+    final jpeg444 = await ImageFfmpeg.encodeJpeg(
       rgba,
       quality: 80,
       chroma: JpegChroma.yuv444,
@@ -290,7 +293,7 @@ void main() {
     expect(_jpegSampling(jpeg444).toSet(), hasLength(1));
     expect(jpeg.sublist(0, 2), [0xff, 0xd8]);
     expect(jpeg.sublist(jpeg.length - 2), [0xff, 0xd9]);
-    final jpegRoundTrip = await ffmpeg.decodeImage(jpeg);
+    final jpegRoundTrip = await ImageFfmpeg.decodeImage(jpeg);
     expect((jpegRoundTrip.width, jpegRoundTrip.height), (4, 2));
     expect([
       for (var index = 3; index < jpegRoundTrip.bytes.length; index += 4)
@@ -305,16 +308,16 @@ void main() {
         for (var pixel = 0; pixel < 16 * 16; pixel++) ...[255, 0, 0, 0],
       ]),
     );
-    final flattened = await ffmpeg.decodeImage(
-      await ffmpeg.encodeJpeg(transparentRed),
+    final flattened = await ImageFfmpeg.decodeImage(
+      await ImageFfmpeg.encodeJpeg(transparentRed),
     );
     expect([
       for (var index = 0; index < flattened.bytes.length; index += 4)
         ...flattened.bytes.sublist(index, index + 3),
     ], everyElement(greaterThanOrEqualTo(250)));
 
-    final redBackground = await ffmpeg.decodeImage(
-      await ffmpeg.encodeJpeg(
+    final redBackground = await ImageFfmpeg.decodeImage(
+      await ImageFfmpeg.encodeJpeg(
         transparentRed,
         chroma: JpegChroma.yuv444,
         backgroundColor: 0xffff0000,
@@ -328,21 +331,22 @@ void main() {
   });
 
   test('decodes with deterministic integer box averaging', () async {
-    final ffmpeg = await Ffmpeg.load();
-    addTearDown(ffmpeg.dispose);
     final source = RgbaImage(
       width: 2,
       height: 1,
       stride: 8,
       bytes: Uint8List.fromList(const [255, 0, 0, 255, 0, 0, 255, 0]),
     );
-    final png = await ffmpeg.encodePng(source);
+    final png = await ImageFfmpeg.encodePng(source);
 
-    final included = await ffmpeg.decodeImageBoxAverage(png, maxDimension: 1);
+    final included = await ImageFfmpeg.decodeImageBoxAverage(
+      png,
+      maxDimension: 1,
+    );
     expect((included.width, included.height, included.stride), (1, 1, 4));
     expect(included.bytes, [128, 0, 128, 128]);
 
-    final opaqueOnly = await ffmpeg.decodeImageBoxAverage(
+    final opaqueOnly = await ImageFfmpeg.decodeImageBoxAverage(
       png,
       maxDimension: 1,
       alphaMode: BoxAverageAlphaMode.opaqueOnly,
@@ -351,8 +355,6 @@ void main() {
   });
 
   test('box averaging has fixed cell boundaries and rounding', () async {
-    final ffmpeg = await Ffmpeg.load();
-    addTearDown(ffmpeg.dispose);
     const width = 7;
     const height = 5;
     final source = RgbaImage(
@@ -369,11 +371,11 @@ void main() {
           ],
       ]),
     );
-    final png = await ffmpeg.encodePng(source);
-    final decoded = await ffmpeg.decodeImage(png);
+    final png = await ImageFfmpeg.encodePng(source);
+    final decoded = await ImageFfmpeg.decodeImage(png);
 
     for (final alphaMode in BoxAverageAlphaMode.values) {
-      final actual = await ffmpeg.decodeImageBoxAverage(
+      final actual = await ImageFfmpeg.decodeImageBoxAverage(
         png,
         maxDimension: 3,
         alphaMode: alphaMode,
@@ -389,16 +391,13 @@ void main() {
   });
 
   test('validates arguments before entering the backend', () async {
-    final ffmpeg = await Ffmpeg.load();
-    addTearDown(ffmpeg.dispose);
-
-    expect(() => ffmpeg.decodeImage(Uint8List(0)), throwsArgumentError);
+    expect(() => ImageFfmpeg.decodeImage(Uint8List(0)), throwsArgumentError);
     expect(
-      () => ffmpeg.decodeImage(Uint8List(1), maxWidth: -1),
+      () => ImageFfmpeg.decodeImage(Uint8List(1), maxWidth: -1),
       throwsArgumentError,
     );
     expect(
-      () => ffmpeg.decodeImageBoxAverage(Uint8List(1), maxDimension: 0),
+      () => ImageFfmpeg.decodeImageBoxAverage(Uint8List(1), maxDimension: 0),
       throwsArgumentError,
     );
 
@@ -408,18 +407,24 @@ void main() {
       stride: 4,
       bytes: Uint8List(4),
     );
-    expect(() => ffmpeg.encodeJpeg(image, quality: 0), throwsArgumentError);
-    expect(() => ffmpeg.encodeJpeg(image, quality: 101), throwsArgumentError);
     expect(
-      () => ffmpeg.encodePng(image, compressionLevel: -1),
+      () => ImageFfmpeg.encodeJpeg(image, quality: 0),
       throwsArgumentError,
     );
     expect(
-      () => ffmpeg.encodePng(image, compressionLevel: 10),
+      () => ImageFfmpeg.encodeJpeg(image, quality: 101),
       throwsArgumentError,
     );
     expect(
-      () => ffmpeg.transcodeImage(
+      () => ImageFfmpeg.encodePng(image, compressionLevel: -1),
+      throwsArgumentError,
+    );
+    expect(
+      () => ImageFfmpeg.encodePng(image, compressionLevel: 10),
+      throwsArgumentError,
+    );
+    expect(
+      () => ImageFfmpeg.transcodeImage(
         Uint8List(1),
         output: const ImageOutput.jpeg(quality: 0),
       ),

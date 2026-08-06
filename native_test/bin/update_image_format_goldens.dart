@@ -21,31 +21,26 @@ const _fixtures = {
 };
 
 Future<void> main() async {
-  final ffmpeg = await Ffmpeg.load();
-  if (!ffmpeg.capabilities.canDecodeImage) {
+  if (!(await ImageFfmpeg.capabilities).canDecodeImage) {
     throw StateError('This tool requires the native linked-FFmpeg harness.');
   }
 
-  try {
-    for (final entry in _fixtures.entries) {
-      final encoded = await File(
-        '$_fixtureRoot/sources/${entry.key}',
-      ).readAsBytes();
-      final decoded = await ffmpeg.decodeImage(encoded);
-      final image = img.Image.fromBytes(
-        width: decoded.width,
-        height: decoded.height,
-        bytes: decoded.bytes.buffer,
-        bytesOffset: decoded.bytes.offsetInBytes,
-        rowStride: decoded.stride,
-        numChannels: 4,
-        order: img.ChannelOrder.rgba,
-      );
-      final output = File('$_fixtureRoot/goldens/${entry.value}');
-      await output.writeAsBytes(img.encodePng(image));
-      stdout.writeln('${entry.key} -> ${output.path}');
-    }
-  } finally {
-    await ffmpeg.dispose();
+  for (final entry in _fixtures.entries) {
+    final encoded = await File(
+      '$_fixtureRoot/sources/${entry.key}',
+    ).readAsBytes();
+    final decoded = await ImageFfmpeg.decodeImage(encoded);
+    final image = img.Image.fromBytes(
+      width: decoded.width,
+      height: decoded.height,
+      bytes: decoded.bytes.buffer,
+      bytesOffset: decoded.bytes.offsetInBytes,
+      rowStride: decoded.stride,
+      numChannels: 4,
+      order: img.ChannelOrder.rgba,
+    );
+    final output = File('$_fixtureRoot/goldens/${entry.value}');
+    await output.writeAsBytes(img.encodePng(image));
+    stdout.writeln('${entry.key} -> ${output.path}');
   }
 }
