@@ -8,6 +8,8 @@ import '../../image_ffmpeg_bindings_generated.dart' as native;
 import '../models.dart';
 import 'backend.dart';
 
+Uint8List snapshotBytes(Uint8List bytes) => bytes;
+
 Future<FfmpegBackend> loadBackend() async {
   final abiVersion = native.image_ffmpeg_abi_version();
   if (abiVersion != native.IMAGE_FFMPEG_ABI_VERSION) {

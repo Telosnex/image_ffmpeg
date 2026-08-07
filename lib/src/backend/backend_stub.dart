@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import '../models.dart';
 import 'backend.dart';
 
+Uint8List snapshotBytes(Uint8List bytes) => bytes;
+
 Future<FfmpegBackend> loadBackend() async => const _UnsupportedBackend();
 
 final class _UnsupportedBackend implements FfmpegBackend {

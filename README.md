@@ -214,12 +214,15 @@ dart run ffigen --config ffigen.yaml
 dart test test/image_ffmpeg_test.dart
 dart test -p chrome --concurrency=1 \
   test/image_ffmpeg_web_bad_worker_test.dart test/image_ffmpeg_web_test.dart \
+  test/image_ffmpeg_web_pool_test.dart test/image_ffmpeg_web_serial_pool_test.dart \
   test/image_ffmpeg_web_corpus_test.dart
 dart test -p chrome -c dart2wasm --concurrency=1 \
   test/image_ffmpeg_web_bad_worker_test.dart test/image_ffmpeg_web_test.dart \
+  test/image_ffmpeg_web_pool_test.dart test/image_ffmpeg_web_serial_pool_test.dart \
   test/image_ffmpeg_web_corpus_test.dart
 dart test -p safari --concurrency=1 \
   test/image_ffmpeg_web_bad_worker_test.dart test/image_ffmpeg_web_test.dart \
+  test/image_ffmpeg_web_pool_test.dart test/image_ffmpeg_web_serial_pool_test.dart \
   test/image_ffmpeg_web_corpus_test.dart # macOS
 dart analyze
 ```

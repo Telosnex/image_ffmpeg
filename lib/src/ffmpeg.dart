@@ -36,7 +36,8 @@ abstract final class ImageFfmpeg {
   /// without allocating a decoded pixel buffer.
   static Future<ImageInfo> probeImage(Uint8List bytes) async {
     _validateEncodedBytes(bytes);
-    return (await _getBackend()).probeImage(bytes);
+    final snapshot = platform.snapshotBytes(bytes);
+    return (await _getBackend()).probeImage(snapshot);
   }
 
   /// Probes and decodes arbitrary encoded image [bytes] to RGBA8888.
@@ -57,8 +58,9 @@ abstract final class ImageFfmpeg {
     if (maxHeight < 0) throw ArgumentError.value(maxHeight, 'maxHeight');
     _validateUint32(maxWidth, 'maxWidth');
     _validateUint32(maxHeight, 'maxHeight');
+    final snapshot = platform.snapshotBytes(bytes);
     return (await _getBackend()).decodeImage(
-      bytes,
+      snapshot,
       maxWidth: maxWidth,
       maxHeight: maxHeight,
     );
@@ -85,8 +87,9 @@ abstract final class ImageFfmpeg {
       );
     }
     _validateUint32(maxDimension, 'maxDimension');
+    final snapshot = platform.snapshotBytes(bytes);
     return (await _getBackend()).decodeImageBoxAverage(
-      bytes,
+      snapshot,
       maxDimension: maxDimension,
       alphaMode: alphaMode,
     );
@@ -104,8 +107,9 @@ abstract final class ImageFfmpeg {
   }) async {
     _validateEncodeImage(image);
     _validateJpegOptions(quality, backgroundColor);
+    final snapshot = _snapshotImage(image);
     return (await _getBackend()).encodeJpeg(
-      image,
+      snapshot,
       quality: quality,
       chroma: chroma,
       backgroundColor: backgroundColor,
@@ -121,8 +125,9 @@ abstract final class ImageFfmpeg {
   }) async {
     _validateEncodeImage(image);
     _validatePngCompression(compressionLevel);
+    final snapshot = _snapshotImage(image);
     return (await _getBackend()).encodePng(
-      image,
+      snapshot,
       compressionLevel: compressionLevel,
     );
   }
@@ -154,8 +159,9 @@ abstract final class ImageFfmpeg {
       _validateUint32(crop.height, 'crop.height');
     }
     _validateOutput(output);
+    final snapshot = platform.snapshotBytes(bytes);
     return (await _getBackend()).transcodeImage(
-      bytes,
+      snapshot,
       output: output,
       maxWidth: maxWidth,
       maxHeight: maxHeight,
@@ -180,8 +186,9 @@ abstract final class ImageFfmpeg {
     _validateEncodedBytes(bytes);
     _validateFillRect(rectangle);
     _validateOutput(output);
+    final snapshot = platform.snapshotBytes(bytes);
     return (await _getBackend()).transcodeImage(
-      bytes,
+      snapshot,
       output: output,
       maxWidth: 0,
       maxHeight: 0,
@@ -195,6 +202,17 @@ abstract final class ImageFfmpeg {
   static void _validateEncodedBytes(Uint8List bytes) {
     if (bytes.isEmpty) throw ArgumentError.value(bytes, 'bytes');
     _validateUint32(bytes.length, 'bytes.length');
+  }
+
+  static RgbaImage _snapshotImage(RgbaImage image) {
+    final bytes = platform.snapshotBytes(image.bytes);
+    if (identical(bytes, image.bytes)) return image;
+    return RgbaImage(
+      width: image.width,
+      height: image.height,
+      stride: image.stride,
+      bytes: bytes,
+    );
   }
 
   static void _validateJpegOptions(int quality, int backgroundColor) {

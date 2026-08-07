@@ -2,6 +2,13 @@
 ///
 /// Native platforms ignore these settings entirely.
 abstract final class ImageFfmpegWeb {
+  /// Number of module Workers in the browser pool.
+  ///
+  /// Each Worker owns one Wasm runtime and runs one operation at a time. The
+  /// valid range is 1 through 4. The backend reads this value once during its
+  /// first initialization. Set it before the first [ImageFfmpeg] operation.
+  static int workerCount = 2;
+
   /// Where to load `image_ffmpeg_worker.mjs` from.
   ///
   /// When null, the Flutter web asset location
@@ -13,8 +20,9 @@ abstract final class ImageFfmpegWeb {
   /// tests) must serve this package's `lib/web/` directory somewhere
   /// same-origin and point this at the served `image_ffmpeg_worker.mjs`. The
   /// worker imports `image_ffmpeg_module.mjs` and `image_ffmpeg_module.wasm`
-  /// relative to its own URL, so the three files must stay siblings.
-  /// Set this before the first [ImageFfmpeg] operation; the shared page-wide
-  /// Worker keeps its original URL afterward.
+  /// through `image_ffmpeg_loader.mjs` relative to its own URL. All four web
+  /// assets must stay siblings.
+  /// Set this before the first [ImageFfmpeg] operation. The shared page-wide
+  /// Worker pool keeps its original URL afterward.
   static Uri? workerUri;
 }
