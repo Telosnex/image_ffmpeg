@@ -7,7 +7,7 @@ target="${1:-}"
 ffmpeg_commit=d32b387f2b0a484599d4587d651891f0c63c4238
 aom_commit=10aece4157eb79315da205f39e19bf6ab3ee30d0
 zlib_commit=51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf
-profile_version=8
+profile_version=9
 
 usage() {
   cat >&2 <<'EOF'
@@ -203,7 +203,10 @@ case "$target" in
       -DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres
     )
     output_name=image_ffmpeg.dll
-    shared_flags=(-shared -Wl,--enable-auto-image-base -Wl,--no-insert-timestamp)
+    shared_flags=(
+      -shared -static-libgcc
+      -Wl,--enable-auto-image-base -Wl,--no-insert-timestamp
+    )
     verification_tool="${OBJDUMP:-x86_64-w64-mingw32-objdump}"
     system_libraries=(-lm -lbcrypt)
     ;;
@@ -360,9 +363,7 @@ ${prefix}image_ffmpeg_has_ffmpeg
 ${prefix}image_ffmpeg_probe_image
 ${prefix}image_ffmpeg_decode_image_rgba
 ${prefix}image_ffmpeg_decode_image_rgba_box_average
-${prefix}image_ffmpeg_decode_jpeg_rgba
 ${prefix}image_ffmpeg_encode_jpeg_rgba
-${prefix}image_ffmpeg_encode_jpeg_rgba_ex
 ${prefix}image_ffmpeg_encode_png_rgba
 ${prefix}image_ffmpeg_transcode_image
 ${prefix}image_ffmpeg_image_release
@@ -375,17 +376,12 @@ export_flags=()
 if [[ "$os" == macos || "$os" == ios ]]; then
   export_flags=(-Wl,-exported_symbols_list,"$exports")
 elif [[ "$os" == windows ]]; then
-  definition_file="$build_root/image_ffmpeg.def"
-  {
-    echo 'LIBRARY image_ffmpeg'
-    echo 'EXPORTS'
-    sed 's/^/  /' "$exports"
-  } > "$definition_file"
+  definition_file="$root/src/exports_windows.def"
   export_flags=("$definition_file")
 else
   version_script="$build_root/exports.map"
   {
-    echo 'IMAGE_FFMPEG_4 {'
+    echo 'IMAGE_FFMPEG_5 {'
     echo '  global:'
     sed 's/^/    /; s/$/;/' "$exports"
     echo '  local: *;'
@@ -421,8 +417,9 @@ case "$os" in
     fi
     ;;
   windows)
-    if "$verification_tool" -p "$artifact" | grep -Ei 'DLL Name:.*(avcodec|avformat|avutil|swscale|aom|zlib)'; then
-      echo 'Artifact unexpectedly has a codec dependency.' >&2; exit 1;
+    if "$verification_tool" -p "$artifact" | grep -Ei \
+      'DLL Name:.*(avcodec|avformat|avutil|swscale|aom|zlib|libgcc|libstdc|winpthread)'; then
+      echo 'Artifact unexpectedly has a bundled-library/runtime dependency.' >&2; exit 1;
     fi
     ;;
 esac

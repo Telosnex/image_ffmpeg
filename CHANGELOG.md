@@ -1,5 +1,21 @@
 ## 0.0.1
 
+- Remove unreleased JPEG-only Dart/C compatibility aliases and replace the
+  `_ex` encoder with one canonical ABI 5 JPEG operation.
+- Give all boundary-crossing Dart enums explicit checked wire values rather
+  than relying on declaration-order `.index` coupling.
+- Extend the production manifest to lock all 11 native artifacts plus the
+  Worker, loader, Emscripten module, Wasm, source pins, and profile.
+- Add a direct C ownership/security corpus with 6,144 deterministic malformed
+  calls and run it under AddressSanitizer and UndefinedBehaviorSanitizer.
+- Runtime-test exact committed artifacts on macOS arm64/x64, iOS Simulator,
+  Android, Linux arm64/x64, and Windows/Wine.
+- Add 21 versioned synthetic operation recipes covering prime dimensions,
+  poisoned row padding, hidden RGB, exact crop/fill edges, box averaging,
+  passthrough, scaling rounding, JPEG composition, and precise malformed
+  statuses, with a case-ID renderer for actual/expected/diff images.
+- Make production Web builds fail when pinned reduced FFmpeg/libaom inputs are
+  absent; scaffold Wasm can no longer be emitted accidentally.
 - Add fused `ImageFfmpeg.fillRectangle` decode/fill/encode for hot screenshot
   masking paths without round-tripping full RGBA buffers through Dart.
 - Replace the resource-handle-shaped `load()`/`dispose()` API with lazy static

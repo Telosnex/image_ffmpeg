@@ -11,6 +11,7 @@
 #include <libavformat/avformat.h>
 #include <libavutil/error.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/log.h>
 #include <libavutil/mem.h>
 #include <libavutil/opt.h>
 #include <libavutil/pixdesc.h>
@@ -27,9 +28,9 @@ IMAGE_FFMPEG_EXPORT uint32_t image_ffmpeg_abi_version(void) {
 
 IMAGE_FFMPEG_EXPORT const char *image_ffmpeg_build_info(void) {
 #if defined(IMAGE_FFMPEG_WITH_FFMPEG)
-  return "image_ffmpeg ABI 4; " LIBAVCODEC_IDENT;
+  return "image_ffmpeg ABI 5; " LIBAVCODEC_IDENT;
 #else
-  return "image_ffmpeg ABI 4; scaffold (FFmpeg not linked)";
+  return "image_ffmpeg ABI 5; scaffold (FFmpeg not linked)";
 #endif
 }
 
@@ -42,6 +43,13 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_has_ffmpeg(void) {
 }
 
 #if defined(IMAGE_FFMPEG_WITH_FFMPEG)
+
+static void image_ffmpeg_prepare_ffmpeg(void) {
+  // A library must not write decoder diagnostics to its host application's
+  // stderr. Status codes remain the public error channel; sanitizer/fuzz
+  // harnesses also stay readable when deliberately feeding malformed bytes.
+  av_log_set_level(AV_LOG_QUIET);
+}
 
 typedef struct image_ffmpeg_memory_input {
   const uint8_t *data;
@@ -589,13 +597,15 @@ static int image_ffmpeg_receive_first_frames(
 IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_probe_image(
     const uint8_t *input, uint32_t input_length,
     image_ffmpeg_image_info *output) {
-  if (input == NULL || input_length == 0 || output == NULL) {
+  if (output == NULL) return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
+  memset(output, 0, sizeof(*output));
+  if (input == NULL || input_length == 0) {
     return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
   }
-  memset(output, 0, sizeof(*output));
   output->orientation = IMAGE_FFMPEG_ORIENTATION_NORMAL;
   output->has_alpha = -1;
 #if defined(IMAGE_FFMPEG_WITH_FFMPEG)
+  image_ffmpeg_prepare_ffmpeg();
   const int avio_buffer_size = 4096;
   int32_t status = IMAGE_FFMPEG_ERROR_DECODE;
   int stream_index = -1;
@@ -703,12 +713,14 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba(
     uint32_t max_width,
     uint32_t max_height,
     image_ffmpeg_image *output) {
-  if (input == NULL || input_length == 0 || output == NULL) {
+  if (output == NULL) return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
+  memset(output, 0, sizeof(*output));
+  if (input == NULL || input_length == 0) {
     return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
   }
-  memset(output, 0, sizeof(*output));
 
 #if defined(IMAGE_FFMPEG_WITH_FFMPEG)
+  image_ffmpeg_prepare_ffmpeg();
   const int avio_buffer_size = 4096;
   const int64_t max_source_pixels = 100000000;
   int32_t status = IMAGE_FFMPEG_ERROR_DECODE;
@@ -1154,16 +1166,6 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba_box_average(
   return status;
 }
 
-IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_jpeg_rgba(
-    const uint8_t *input,
-    uint32_t input_length,
-    uint32_t max_width,
-    uint32_t max_height,
-    image_ffmpeg_image *output) {
-  return image_ffmpeg_decode_image_rgba(input, input_length, max_width,
-                                       max_height, output);
-}
-
 #if defined(IMAGE_FFMPEG_WITH_FFMPEG)
 static int32_t image_ffmpeg_encode_rgba(
     const uint8_t *rgba, uint32_t width, uint32_t height, uint32_t stride,
@@ -1330,7 +1332,7 @@ static int32_t image_ffmpeg_validate_encode_arguments(
   return IMAGE_FFMPEG_OK;
 }
 
-IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_encode_jpeg_rgba_ex(
+IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_encode_jpeg_rgba(
     const uint8_t *rgba, uint32_t rgba_length, uint32_t width,
     uint32_t height, uint32_t stride, uint32_t quality, uint32_t chroma,
     uint32_t background_argb, image_ffmpeg_buffer *output) {
@@ -1341,6 +1343,7 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_encode_jpeg_rgba_ex(
     return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
   }
 #if defined(IMAGE_FFMPEG_WITH_FFMPEG)
+  image_ffmpeg_prepare_ffmpeg();
   return image_ffmpeg_encode_rgba(rgba, width, height, stride,
                                  AV_CODEC_ID_MJPEG, quality, chroma,
                                  background_argb, output);
@@ -1348,15 +1351,6 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_encode_jpeg_rgba_ex(
   (void)background_argb;
   return IMAGE_FFMPEG_ERROR_FFMPEG_NOT_LINKED;
 #endif
-}
-
-IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_encode_jpeg_rgba(
-    const uint8_t *rgba, uint32_t rgba_length, uint32_t width,
-    uint32_t height, uint32_t stride, uint32_t quality,
-    image_ffmpeg_buffer *output) {
-  return image_ffmpeg_encode_jpeg_rgba_ex(
-      rgba, rgba_length, width, height, stride, quality,
-      IMAGE_FFMPEG_JPEG_CHROMA_420, 0xffffffffu, output);
 }
 
 IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_encode_png_rgba(
@@ -1368,6 +1362,7 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_encode_png_rgba(
       output);
   if (status != IMAGE_FFMPEG_OK) return status;
 #if defined(IMAGE_FFMPEG_WITH_FFMPEG)
+  image_ffmpeg_prepare_ffmpeg();
   return image_ffmpeg_encode_rgba(rgba, width, height, stride, AV_CODEC_ID_PNG,
                                  compression_level, 0, 0, output);
 #else
@@ -1550,10 +1545,11 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_transcode_image(
     const uint8_t *input, uint32_t input_length,
     const image_ffmpeg_transcode_options *options,
     image_ffmpeg_encoded_image *output) {
-  if (input == NULL || input_length == 0 || options == NULL || output == NULL) {
+  if (output == NULL) return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
+  memset(output, 0, sizeof(*output));
+  if (input == NULL || input_length == 0 || options == NULL) {
     return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
   }
-  memset(output, 0, sizeof(*output));
   if ((options->output_format != IMAGE_FFMPEG_IMAGE_FORMAT_JPEG &&
        options->output_format != IMAGE_FFMPEG_IMAGE_FORMAT_PNG) ||
       options->apply_orientation > 1 ||
@@ -1623,7 +1619,7 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_transcode_image(
   if (status != IMAGE_FFMPEG_OK) goto cleanup;
 
   if (options->output_format == IMAGE_FFMPEG_IMAGE_FORMAT_JPEG) {
-    status = image_ffmpeg_encode_jpeg_rgba_ex(
+    status = image_ffmpeg_encode_jpeg_rgba(
         decoded.data, decoded.length, decoded.width, decoded.height,
         decoded.stride, options->jpeg_quality, options->jpeg_chroma,
         options->jpeg_background_argb, &encoded);

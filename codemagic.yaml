@@ -8,9 +8,9 @@ definitions:
     script: |
       dart pub get
       dart analyze
-      dart run tool/verify_native_artifacts.dart
+      dart run tool/verify_artifacts.dart
       dart run tool/update_browser_corpus_manifest.dart --check
-      dart test test/image_ffmpeg_test.dart
+      dart test
 
 workflows:
   android-build:
@@ -53,13 +53,8 @@ workflows:
     triggering:
       events: [push]
     scripts:
-      - *verify
-      - name: Test Safari browser backend and corpus
-        script: |
-          dart test -p safari --concurrency=1 \
-            test/image_ffmpeg_web_bad_worker_test.dart \
-            test/image_ffmpeg_web_test.dart \
-            test/image_ffmpeg_web_corpus_test.dart
+      - name: Run authoritative conformance gate
+        script: tool/test_all.sh
       - name: Build macOS
         script: |
           cd example
@@ -93,17 +88,9 @@ workflows:
     triggering:
       events: [push]
     scripts:
-      - *verify
       - name: Test browser backend and build web example
         script: |
-          dart test -p chrome --concurrency=1 \
-            test/image_ffmpeg_web_bad_worker_test.dart \
-            test/image_ffmpeg_web_test.dart \
-            test/image_ffmpeg_web_corpus_test.dart
-          dart test -p chrome -c dart2wasm --concurrency=1 \
-            test/image_ffmpeg_web_bad_worker_test.dart \
-            test/image_ffmpeg_web_test.dart \
-            test/image_ffmpeg_web_corpus_test.dart
+          tool/test_all.sh
           cd example
           flutter pub get
           flutter build web

@@ -14,9 +14,10 @@ behind one Dart API:
               └────────── Future-based Dart API ──┘
 ```
 
-Native builds bundle SHA-256-pinned artifacts for Android, iOS, Linux, macOS,
-and Windows. Each artifact contains the stable shim plus the official FFmpeg
-9.0 release, decoder-only libaom 3.12.1, and zlib 1.3.1. FFmpeg 9.0 includes its native animated-WebP decoder and is pinned by the
+Builds bundle SHA-256-pinned native and Web artifacts for Android, iOS, Linux,
+macOS, Windows, and browsers. Each native artifact contains the stable shim
+plus the official FFmpeg 9.0 release, decoder-only libaom 3.12.1, and zlib
+1.3.1. FFmpeg 9.0 includes its native animated-WebP decoder and is pinned by the
 release tag's exact peeled commit. Consumers do not install FFmpeg,
 Homebrew, CocoaPods, or Gradle native dependencies. Browsers use the same
 reduced codec profile through a bundled WebAssembly module running off the UI
@@ -74,8 +75,8 @@ final redacted = await ImageFfmpeg.fillRectangle(
 ```
 
 The API is asynchronous and lazily initialized on every platform. Native work
-runs on a helper isolate; browser work uses one package-managed Worker and Wasm
-module for the page lifetime. Callers do not load or dispose codec handles.
+runs on helper isolates; browser work uses a bounded package-managed Worker/
+Wasm pool for the page lifetime. Callers do not load or dispose codec handles.
 
 ## Why a shim instead of generated FFmpeg bindings?
 
@@ -163,10 +164,11 @@ Emscripten module relatively, and the Emscripten module locates its Wasm binary
 relatively. They must be served over HTTP(S) with JavaScript/Wasm MIME types;
 `file://` does not provide a usable module-Worker origin.
 
-The complete 439-test native conformance matrix is mirrored through the real
+The complete fixture conformance matrix is mirrored through the real
 Worker/Wasm backend in Chrome dart2js, Chrome Dart2Wasm/WasmGC, and Safari
-dart2js. It covers all 340 source fixtures, malformed inputs, metadata, scaling,
-and reviewed or independently generated pixel references. Encoded inputs are
+dart2js. It covers all 340 source fixtures, 21 deterministic operation recipes,
+malformed inputs, metadata, scaling, and reviewed or independently generated
+pixel references. Encoded inputs are
 copied into transferable buffers before dispatch so transferring them never
 detaches caller-owned Dart bytes. Encoded and RGBA results are transferred back
 rather than structured-cloned.
@@ -182,8 +184,9 @@ rather than structured-cloned.
 | Windows | x64 | Windows 10 |
 
 The build hook selects the target tuple, verifies the committed artifact's
-SHA-256, and emits it as a bundled Dart code asset. Unsupported tuples fail at
-build time rather than loading an FFmpeg-free scaffold. Exact source commits,
+SHA-256, and emits it as a bundled Dart code asset. A package verifier also
+locks the Worker, loader, Emscripten module, and Wasm hashes. Unsupported tuples
+fail at build time rather than loading an FFmpeg-free scaffold. Exact source commits,
 checksums, licenses, dependency-closure checks, and reproduction commands are
 in [`native_artifacts/README.md`](native_artifacts/README.md).
 
@@ -202,6 +205,10 @@ in [`native_artifacts/README.md`](native_artifacts/README.md).
 - `lib/web/image_ffmpeg_module.{mjs,wasm}`: committed browser runtime bundled as
   Flutter package assets.
 - `tool/build_web.sh`: builds the current C shim to Wasm.
+- `tool/verify_artifacts.dart`: verifies exact source/profile pins, all 11
+  native tuples, and all four Web assets.
+- `tool/support/abi_boundary_test.c`: positive ownership checks and 6,144
+  deterministic malformed descriptor/option/encoded-input cases.
 - `tool/fetch_ffmpeg.sh`: fetches the pinned upstream source.
 - `native_test/`: linked-FFmpeg format conformance suite with viewable PNG
   goldens and actual/expected/amplified-diff artifacts on failures.
@@ -211,20 +218,20 @@ in [`native_artifacts/README.md`](native_artifacts/README.md).
 ```bash
 dart pub get
 dart run ffigen --config ffigen.yaml
-dart test test/image_ffmpeg_test.dart
-dart test -p chrome --concurrency=1 \
-  test/image_ffmpeg_web_bad_worker_test.dart test/image_ffmpeg_web_test.dart \
-  test/image_ffmpeg_web_pool_test.dart test/image_ffmpeg_web_serial_pool_test.dart \
-  test/image_ffmpeg_web_corpus_test.dart
-dart test -p chrome -c dart2wasm --concurrency=1 \
-  test/image_ffmpeg_web_bad_worker_test.dart test/image_ffmpeg_web_test.dart \
-  test/image_ffmpeg_web_pool_test.dart test/image_ffmpeg_web_serial_pool_test.dart \
-  test/image_ffmpeg_web_corpus_test.dart
-dart test -p safari --concurrency=1 \
-  test/image_ffmpeg_web_bad_worker_test.dart test/image_ffmpeg_web_test.dart \
-  test/image_ffmpeg_web_pool_test.dart test/image_ffmpeg_web_serial_pool_test.dart \
-  test/image_ffmpeg_web_corpus_test.dart # macOS
-dart analyze
+tool/test_all.sh
+```
+
+The authoritative gate includes analysis, source/artifact verification, native
+and browser fixture suites, deterministic operation recipes, exact macOS
+artifact execution, and ASan/UBSan. Set
+`IMAGE_FFMPEG_FULL_RUNTIME_MATRIX=1` to additionally execute the exact iOS,
+Android, Linux, and Windows artifacts.
+
+Reproduce a generated operation failure as source/actual/expected/diff images:
+
+```bash
+dart run tool/render_synthetic_operation.dart --list
+dart run tool/render_synthetic_operation.dart v1/crop-bottom-right /tmp/case
 ```
 
 `dart_test.yaml` routes Safari through `tool/safari_test_launcher.sh`. The

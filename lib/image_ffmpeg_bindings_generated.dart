@@ -74,30 +74,13 @@ external int image_ffmpeg_decode_image_rgba_box_average(
   ffi.Pointer<image_ffmpeg_image> output,
 );
 
-/// Compatibility entry point. It now performs the same format-probing operation
-/// as image_ffmpeg_decode_image_rgba rather than requiring JPEG input.
+/// Encodes RGBA8888 as JPEG. Quality is 1..100. background_argb is 0xAARRGGBB
+/// (the alpha byte is ignored); chroma is IMAGE_FFMPEG_JPEG_CHROMA_420 or _444.
 @ffi.Native<
   ffi.Int32 Function(
     ffi.Pointer<ffi.Uint8>,
     ffi.Uint32,
     ffi.Uint32,
-    ffi.Uint32,
-    ffi.Pointer<image_ffmpeg_image>,
-  )
->()
-external int image_ffmpeg_decode_jpeg_rgba(
-  ffi.Pointer<ffi.Uint8> input,
-  int input_length,
-  int max_width,
-  int max_height,
-  ffi.Pointer<image_ffmpeg_image> output,
-);
-
-/// Encodes RGBA8888 pixels as a complete JPEG image. Quality is 1 (lowest) to
-/// 100 (highest). JPEG has no alpha channel, so pixels are composited onto white.
-@ffi.Native<
-  ffi.Int32 Function(
-    ffi.Pointer<ffi.Uint8>,
     ffi.Uint32,
     ffi.Uint32,
     ffi.Uint32,
@@ -107,31 +90,6 @@ external int image_ffmpeg_decode_jpeg_rgba(
   )
 >()
 external int image_ffmpeg_encode_jpeg_rgba(
-  ffi.Pointer<ffi.Uint8> rgba,
-  int rgba_length,
-  int width,
-  int height,
-  int stride,
-  int quality,
-  ffi.Pointer<image_ffmpeg_buffer> output,
-);
-
-/// Extended JPEG encoder. background_argb is 0xAARRGGBB (the alpha byte is
-/// ignored); chroma is IMAGE_FFMPEG_JPEG_CHROMA_420 or _444.
-@ffi.Native<
-  ffi.Int32 Function(
-    ffi.Pointer<ffi.Uint8>,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Uint32,
-    ffi.Pointer<image_ffmpeg_buffer>,
-  )
->()
-external int image_ffmpeg_encode_jpeg_rgba_ex(
   ffi.Pointer<ffi.Uint8> rgba,
   int rgba_length,
   int width,
@@ -472,4 +430,4 @@ final class image_ffmpeg_encoded_image extends ffi.Struct {
   external int format;
 }
 
-const int IMAGE_FFMPEG_ABI_VERSION = 4;
+const int IMAGE_FFMPEG_ABI_VERSION = 5;

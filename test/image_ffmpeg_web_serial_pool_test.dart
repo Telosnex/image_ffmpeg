@@ -34,6 +34,22 @@ void main() {
     expect(results.map((result) => result.width), [10, 11]);
   });
 
+  test(
+    'the central queue dispatches waiting operations in FIFO order',
+    () async {
+      final completionOrder = <int>[];
+      Future<void> run(int delay, int value) async {
+        await ImageFfmpeg.probeImage(
+          _requestBytes(delay, value, [value, 91, 37]),
+        );
+        completionOrder.add(value);
+      }
+
+      await Future.wait([run(80, 10), run(0, 20), run(0, 30), run(0, 40)]);
+      expect(completionOrder, [10, 20, 30, 40]);
+    },
+  );
+
   test('an FFmpeg error does not stop its Worker', () async {
     await expectLater(
       ImageFfmpeg.probeImage(_requestBytes(254, 1, [2, 3, 4])),
@@ -55,9 +71,7 @@ void main() {
         isA<FfmpegException>().having((error) => error.status, 'status', -2),
       ),
     );
-    final queued = ImageFfmpeg.probeImage(
-      _requestBytes(0, 83, [11, 12, 13]),
-    );
+    final queued = ImageFfmpeg.probeImage(_requestBytes(0, 83, [11, 12, 13]));
 
     await failed;
     expect((await queued).width, 83);

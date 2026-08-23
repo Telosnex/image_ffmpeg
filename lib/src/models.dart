@@ -34,10 +34,6 @@ final class FfmpegCapabilities {
   /// Whether this build can encode RGBA8888 pixels as PNG.
   bool get canEncodePng => canDecodeImage;
 
-  /// Compatibility alias for callers written against the JPEG-only scaffold.
-  @Deprecated('Use canDecodeImage')
-  bool get canDecodeJpeg => canDecodeImage;
-
   @override
   String toString() =>
       'FfmpegCapabilities(runtime: $runtime, abiVersion: $abiVersion, '
@@ -47,51 +43,94 @@ final class FfmpegCapabilities {
 
 /// Encoded image formats recognized by the reduced build.
 enum ImageFormat {
-  unknown,
-  jpeg,
-  png,
-  apng,
-  webp,
-  gif,
-  bmp,
-  tiff,
-  avif,
-  psd,
-  ico,
+  unknown(0),
+  jpeg(1),
+  png(2),
+  apng(3),
+  webp(4),
+  gif(5),
+  bmp(6),
+  tiff(7),
+  avif(8),
+  psd(9),
+  ico(10);
+
+  const ImageFormat(this.wireValue);
+
+  final int wireValue;
+
+  static ImageFormat fromWireValue(int value) => switch (value) {
+    0 => unknown,
+    1 => jpeg,
+    2 => png,
+    3 => apng,
+    4 => webp,
+    5 => gif,
+    6 => bmp,
+    7 => tiff,
+    8 => avif,
+    9 => psd,
+    10 => ico,
+    _ => throw ArgumentError.value(value, 'value', 'unknown image format'),
+  };
 }
 
 /// The transform described by the EXIF Orientation tag.
 enum ImageOrientation {
-  normal,
-  flipHorizontal,
-  rotate180,
-  flipVertical,
-  transpose,
-  rotate90,
-  transverse,
-  rotate270,
+  normal(1),
+  flipHorizontal(2),
+  rotate180(3),
+  flipVertical(4),
+  transpose(5),
+  rotate90(6),
+  transverse(7),
+  rotate270(8);
+
+  const ImageOrientation(this.wireValue);
+
+  final int wireValue;
+
+  static ImageOrientation fromWireValue(int value) => switch (value) {
+    1 => normal,
+    2 => flipHorizontal,
+    3 => rotate180,
+    4 => flipVertical,
+    5 => transpose,
+    6 => rotate90,
+    7 => transverse,
+    8 => rotate270,
+    _ => throw ArgumentError.value(value, 'value', 'unknown orientation'),
+  };
 }
 
 /// JPEG chroma resolution.
 enum JpegChroma {
   /// One chroma pair per 2×2 luma block; compact and well suited to photos.
-  yuv420,
+  yuv420(0),
 
   /// Full chroma at every pixel; preferred for screenshots and colored text.
-  yuv444,
+  yuv444(1);
+
+  const JpegChroma(this.wireValue);
+
+  final int wireValue;
 }
 
 /// How deterministic box averaging handles source alpha.
 enum BoxAverageAlphaMode {
   /// Average red, green, blue, and alpha from every source pixel.
-  include,
+  include(0),
 
   /// Include only pixels whose alpha is exactly 255.
   ///
   /// Output cells containing retained samples are opaque. Cells without an
   /// opaque source sample remain transparent black. This is useful when the
   /// result feeds color extraction and hidden RGB must not affect the palette.
-  opaqueOnly,
+  opaqueOnly(1);
+
+  const BoxAverageAlphaMode(this.wireValue);
+
+  final int wireValue;
 }
 
 /// Image metadata obtained without materializing decoded pixels.

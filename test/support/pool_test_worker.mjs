@@ -18,7 +18,7 @@ self.onmessage = ({data}) => {
     self.postMessage({
       id,
       result: {
-        abiVersion: 4,
+        abiVersion: 5,
         hasFfmpeg: true,
         buildInfo: 'image_ffmpeg pool test Worker',
       },

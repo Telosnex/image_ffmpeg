@@ -1,0 +1,15 @@
+LIBRARY image_ffmpeg
+EXPORTS
+  image_ffmpeg_abi_version
+  image_ffmpeg_build_info
+  image_ffmpeg_has_ffmpeg
+  image_ffmpeg_probe_image
+  image_ffmpeg_decode_image_rgba
+  image_ffmpeg_decode_image_rgba_box_average
+  image_ffmpeg_encode_jpeg_rgba
+  image_ffmpeg_encode_png_rgba
+  image_ffmpeg_transcode_image
+  image_ffmpeg_image_release
+  image_ffmpeg_buffer_release
+  image_ffmpeg_encoded_image_release
+  image_ffmpeg_error_message

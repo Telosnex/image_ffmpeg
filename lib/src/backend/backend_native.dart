@@ -124,14 +124,14 @@ Uint8List _encodeOnHelperIsolate(
   try {
     input.asTypedList(image.bytes.length).setAll(0, image.bytes);
     final status = switch (format) {
-      _EncodedFormat.jpeg => native.image_ffmpeg_encode_jpeg_rgba_ex(
+      _EncodedFormat.jpeg => native.image_ffmpeg_encode_jpeg_rgba(
         input,
         image.bytes.length,
         image.width,
         image.height,
         image.stride,
         option,
-        chroma.index,
+        chroma.wireValue,
         backgroundColor,
         output,
       ),
@@ -173,12 +173,12 @@ ImageInfo _probeImageOnHelperIsolate(Uint8List encoded) {
     _throwForStatus(status);
     final info = output.ref;
     return ImageInfo(
-      format: ImageFormat.values[info.format],
+      format: ImageFormat.fromWireValue(info.format),
       width: info.width,
       height: info.height,
       displayWidth: info.display_width,
       displayHeight: info.display_height,
-      orientation: ImageOrientation.values[info.orientation - 1],
+      orientation: ImageOrientation.fromWireValue(info.orientation),
       frameCount: info.frame_count,
       hasAlpha: switch (info.has_alpha) {
         0 => false,
@@ -209,7 +209,7 @@ EncodedImage _transcodeOnHelperIsolate(
     input.asTypedList(encoded.length).setAll(0, encoded);
     final settings = options.ref;
     settings
-      ..output_format = outputSettings.format.index
+      ..output_format = outputSettings.format.wireValue
       ..max_width = maxWidth
       ..max_height = maxHeight
       ..apply_orientation = applyOrientation ? 1 : 0
@@ -223,7 +223,7 @@ EncodedImage _transcodeOnHelperIsolate(
       ..fill_height = fill?.height ?? 0
       ..fill_argb = fill?.color ?? 0
       ..jpeg_quality = 80
-      ..jpeg_chroma = JpegChroma.yuv420.index
+      ..jpeg_chroma = JpegChroma.yuv420.wireValue
       ..jpeg_background_argb = 0xffffffff
       ..png_compression_level = 6
       ..passthrough_if_unchanged = passthroughIfUnchanged ? 1 : 0;
@@ -231,7 +231,7 @@ EncodedImage _transcodeOnHelperIsolate(
       case JpegImageOutput():
         settings
           ..jpeg_quality = outputSettings.quality
-          ..jpeg_chroma = outputSettings.chroma.index
+          ..jpeg_chroma = outputSettings.chroma.wireValue
           ..jpeg_background_argb = outputSettings.backgroundColor;
       case PngImageOutput():
         settings.png_compression_level = outputSettings.compressionLevel;
@@ -248,7 +248,7 @@ EncodedImage _transcodeOnHelperIsolate(
       bytes: Uint8List.fromList(result.data.asTypedList(result.length)),
       width: result.width,
       height: result.height,
-      format: ImageFormat.values[result.format],
+      format: ImageFormat.fromWireValue(result.format),
     );
   } finally {
     native.image_ffmpeg_encoded_image_release(output);
@@ -312,7 +312,7 @@ RgbaImage _decodeImageBoxAverageOnHelperIsolate(
       input,
       encoded.length,
       maxDimension,
-      alphaMode.index,
+      alphaMode.wireValue,
       output,
     );
     _throwForStatus(status);

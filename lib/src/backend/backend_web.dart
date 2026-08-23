@@ -9,7 +9,7 @@ import 'backend.dart';
 
 /// Must match `IMAGE_FFMPEG_ABI_VERSION` in `src/image_ffmpeg.h` and
 /// `ABI_VERSION` in `lib/web/image_ffmpeg_loader.mjs`.
-const _abiVersion = 4;
+const _abiVersion = 5;
 
 /// Must match `IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888` in `src/image_ffmpeg.h`.
 const _pixelFormatRgba8888 = 1;
@@ -99,11 +99,8 @@ final class _WebPoolBackend implements FfmpegBackend {
     required int maxHeight,
   }) {
     return _enqueue(
-      (worker) => worker.decodeImage(
-        encoded,
-        maxWidth: maxWidth,
-        maxHeight: maxHeight,
-      ),
+      (worker) =>
+          worker.decodeImage(encoded, maxWidth: maxWidth, maxHeight: maxHeight),
     );
   }
 
@@ -145,10 +142,7 @@ final class _WebPoolBackend implements FfmpegBackend {
     required int compressionLevel,
   }) {
     return _enqueue(
-      (worker) => worker.encodePng(
-        image,
-        compressionLevel: compressionLevel,
-      ),
+      (worker) => worker.encodePng(image, compressionLevel: compressionLevel),
     );
   }
 
@@ -213,10 +207,7 @@ final class _WebPoolBackend implements FfmpegBackend {
     _pump();
   }
 
-  void _handleIdleFailure(
-    _WebWorkerBackend worker,
-    FfmpegException error,
-  ) {
+  void _handleIdleFailure(_WebWorkerBackend worker, FfmpegException error) {
     _removeFailedWorker(worker);
     _pump();
   }
@@ -308,8 +299,7 @@ final class _WebWorkerBackend implements FfmpegBackend {
   int _nextRequestId = 0;
   bool _terminated = false;
   late final FfmpegCapabilities _capabilities;
-  void Function(_WebWorkerBackend worker, FfmpegException error)?
-  onIdleFailure;
+  void Function(_WebWorkerBackend worker, FfmpegException error)? onIdleFailure;
 
   Future<FfmpegCapabilities> initialize() async {
     try {
@@ -349,12 +339,12 @@ final class _WebWorkerBackend implements FfmpegBackend {
       ),
     );
     return ImageInfo(
-      format: ImageFormat.values[result.format],
+      format: ImageFormat.fromWireValue(result.format),
       width: result.width,
       height: result.height,
       displayWidth: result.displayWidth,
       displayHeight: result.displayHeight,
-      orientation: ImageOrientation.values[result.orientation - 1],
+      orientation: ImageOrientation.fromWireValue(result.orientation),
       frameCount: result.frameCount,
       hasAlpha: switch (result.hasAlpha) {
         0 => false,
@@ -400,7 +390,7 @@ final class _WebWorkerBackend implements FfmpegBackend {
           operation: 'decodeImageBoxAverage',
           encoded: buffer,
           maxDimension: maxDimension,
-          alphaMode: alphaMode.index,
+          alphaMode: alphaMode.wireValue,
         ),
         transfer: buffer,
       ),
@@ -426,7 +416,7 @@ final class _WebWorkerBackend implements FfmpegBackend {
           height: image.height,
           stride: image.stride,
           quality: quality,
-          chroma: chroma.index,
+          chroma: chroma.wireValue,
           backgroundColor: backgroundColor,
         ),
         transfer: buffer,
@@ -477,7 +467,7 @@ final class _WebWorkerBackend implements FfmpegBackend {
           operation: 'transcodeImage',
           encoded: buffer,
           options: _TranscodeOptions(
-            outputFormat: output.format.index,
+            outputFormat: output.format.wireValue,
             maxWidth: maxWidth,
             maxHeight: maxHeight,
             applyOrientation: applyOrientation,
@@ -495,8 +485,8 @@ final class _WebWorkerBackend implements FfmpegBackend {
               PngImageOutput() => 80,
             },
             jpegChroma: switch (output) {
-              JpegImageOutput() => output.chroma.index,
-              PngImageOutput() => JpegChroma.yuv420.index,
+              JpegImageOutput() => output.chroma.wireValue,
+              PngImageOutput() => JpegChroma.yuv420.wireValue,
             },
             jpegBackgroundColor: switch (output) {
               JpegImageOutput() => output.backgroundColor,
@@ -516,7 +506,7 @@ final class _WebWorkerBackend implements FfmpegBackend {
       bytes: result.bytes.toDart,
       width: result.width,
       height: result.height,
-      format: ImageFormat.values[result.format],
+      format: ImageFormat.fromWireValue(result.format),
     );
   }
 

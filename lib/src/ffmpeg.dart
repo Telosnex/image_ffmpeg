@@ -273,12 +273,4 @@ abstract final class ImageFfmpeg {
       throw ArgumentError.value(image, 'image', 'geometry exceeds uint32');
     }
   }
-
-  /// Compatibility alias for the original JPEG-only API.
-  @Deprecated('Use decodeImage')
-  static Future<RgbaImage> decodeJpeg(
-    Uint8List encoded, {
-    int maxWidth = 0,
-    int maxHeight = 0,
-  }) => decodeImage(encoded, maxWidth: maxWidth, maxHeight: maxHeight);
 }

@@ -16,8 +16,23 @@ void main() {
   test('loads and validates the native code asset ABI', () async {
     final capabilities = await ImageFfmpeg.capabilities;
     expect(capabilities.runtime, FfmpegRuntime.native);
-    expect(capabilities.abiVersion, 4);
-    expect(capabilities.buildInfo, contains('image_ffmpeg ABI 4'));
+    expect(capabilities.abiVersion, 5);
+    expect(capabilities.buildInfo, contains('image_ffmpeg ABI 5'));
+  });
+
+  test('package wire values are explicit and checked', () {
+    expect(ImageFormat.jpeg.wireValue, 1);
+    expect(ImageFormat.ico.wireValue, 10);
+    expect(ImageFormat.fromWireValue(8), ImageFormat.avif);
+    expect(ImageOrientation.rotate90.wireValue, 6);
+    expect(
+      ImageOrientation.fromWireValue(7),
+      ImageOrientation.transverse,
+    );
+    expect(JpegChroma.yuv444.wireValue, 1);
+    expect(BoxAverageAlphaMode.opaqueOnly.wireValue, 1);
+    expect(() => ImageFormat.fromWireValue(99), throwsArgumentError);
+    expect(() => ImageOrientation.fromWireValue(0), throwsArgumentError);
   });
 
   test('bundles the production FFmpeg capability', () async {

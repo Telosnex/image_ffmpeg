@@ -16,7 +16,7 @@ extern "C" {
 
 // Increment only when the C ABI changes incompatibly. Dart rejects a native or
 // Wasm module with a different version before making any other calls.
-#define IMAGE_FFMPEG_ABI_VERSION 4u
+#define IMAGE_FFMPEG_ABI_VERSION 5u
 
 typedef enum image_ffmpeg_status {
   IMAGE_FFMPEG_OK = 0,
@@ -170,29 +170,9 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba_box_average(
     uint32_t alpha_mode,
     image_ffmpeg_image *output);
 
-// Compatibility entry point. It now performs the same format-probing operation
-// as image_ffmpeg_decode_image_rgba rather than requiring JPEG input.
-IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_jpeg_rgba(
-    const uint8_t *input,
-    uint32_t input_length,
-    uint32_t max_width,
-    uint32_t max_height,
-    image_ffmpeg_image *output);
-
-// Encodes RGBA8888 pixels as a complete JPEG image. Quality is 1 (lowest) to
-// 100 (highest). JPEG has no alpha channel, so pixels are composited onto white.
+// Encodes RGBA8888 as JPEG. Quality is 1..100. background_argb is 0xAARRGGBB
+// (the alpha byte is ignored); chroma is IMAGE_FFMPEG_JPEG_CHROMA_420 or _444.
 IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_encode_jpeg_rgba(
-    const uint8_t *rgba,
-    uint32_t rgba_length,
-    uint32_t width,
-    uint32_t height,
-    uint32_t stride,
-    uint32_t quality,
-    image_ffmpeg_buffer *output);
-
-// Extended JPEG encoder. background_argb is 0xAARRGGBB (the alpha byte is
-// ignored); chroma is IMAGE_FFMPEG_JPEG_CHROMA_420 or _444.
-IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_encode_jpeg_rgba_ex(
     const uint8_t *rgba,
     uint32_t rgba_length,
     uint32_t width,

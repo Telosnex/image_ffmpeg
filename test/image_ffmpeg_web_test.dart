@@ -18,7 +18,7 @@ void main() {
   test('loads the Wasm worker and reports capabilities', () async {
     final capabilities = await ImageFfmpeg.capabilities;
     expect(capabilities.runtime, FfmpegRuntime.webAssembly);
-    expect(capabilities.abiVersion, 4);
+    expect(capabilities.abiVersion, 5);
     expect(capabilities.canDecodeImage, isTrue);
     expect(capabilities.canEncodeJpeg, isTrue);
     expect(capabilities.canEncodePng, isTrue);

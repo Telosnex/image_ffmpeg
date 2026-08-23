@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "profile": 8,
+  "profile": 9,
   "sources": {
     "ffmpeg": "d32b387f2b0a484599d4587d651891f0c63c4238",
     "libaom": "10aece4157eb79315da205f39e19bf6ab3ee30d0",
@@ -10,52 +10,71 @@
     "apple": "Xcode 26.0.1 (17A400), Apple clang 17.0.0",
     "android": "NDK 28.2.13676358, clang 19.0.1",
     "linux": "Debian 11 amd64, GCC 10.2.1",
-    "windows": "Debian 11 amd64, MinGW-w64 GCC 10.2.1"
+    "windows": "Debian 11 amd64, MinGW-w64 GCC 10.2.1",
+    "web": "Emscripten 5.0.0 a7c5deab, Node 22.16.0"
   },
   "artifacts": {
     "android-arm": {
       "path": "android-arm/libimage_ffmpeg.so",
-      "sha256": "61f76b4442d17df675cd0195edacff9c3225842e5ff2af203902c3b149c69a90"
+      "sha256": "c3b5da0272f44ea6c9a549faa6d63c7587e5d448ca88b154f32328633734e6a7"
     },
     "android-arm64": {
       "path": "android-arm64/libimage_ffmpeg.so",
-      "sha256": "be5c7fcca8a49fda51cde52ecabdbeffdabca6fbd9156bbf3317b79d8700a4ce"
+      "sha256": "3a7f9513ecb779c3583411b0ca1365508f1f6ada72365f9fc1467a27db2673ba"
     },
     "android-x64": {
       "path": "android-x64/libimage_ffmpeg.so",
-      "sha256": "ebcde121da111f0499e337647713aa47d129b6190e1fd7f95ba49a977cd70cce"
+      "sha256": "536827216b70de5275b35aa087b329b60e711d4d51a52508a83b0b7d803382d0"
     },
     "ios-arm64-iphoneos": {
       "path": "ios-arm64-iphoneos/libimage_ffmpeg.dylib",
-      "sha256": "9607f60c2f5c67e51945e95e81a7abc9fb7e7984d6d4306baf57ac04613a8da0"
+      "sha256": "044cbaf42f8c08ad061276dbe8e72de43f4e8d628f0a15399d236cb8abc8dccb"
     },
     "ios-arm64-iphonesimulator": {
       "path": "ios-arm64-iphonesimulator/libimage_ffmpeg.dylib",
-      "sha256": "8daba6bfff0767f9e7549e46b0e9286f682115896dc6bfdebdb5f0afda85bc3f"
+      "sha256": "1732da73449c700fed8cbbcecb4fc2244f8f33921b65c550233592ed56218da1"
     },
     "ios-x64-iphonesimulator": {
       "path": "ios-x64-iphonesimulator/libimage_ffmpeg.dylib",
-      "sha256": "56e12bcf47d7b477a96e2688f6c122e6c0a3a5a17148545dd8d23790d6df19b6"
+      "sha256": "831a5cc8446e1e5a8d676fb5a91ed0738cf6a265a197ab9b78f2f083b2a72dd5"
     },
     "linux-arm64": {
       "path": "linux-arm64/libimage_ffmpeg.so",
-      "sha256": "c2d107cbe85320c08539a08233ca9a7f1445d825257c0cf9c09aec98a66f78bd"
+      "sha256": "efd0b7e5c2931b8572ac774e7b0f29673d36e20f3b2c05385ddd19aa49edfb14"
     },
     "linux-x64": {
       "path": "linux-x64/libimage_ffmpeg.so",
-      "sha256": "fe88327de76dd6ee5880ac4ec12da108bb4d163248cb92bb0a73222ca000431a"
+      "sha256": "041f381e57f624177ba59fa3d60f4ff4fdda5ba4dbee81040992b0bb956fb655"
     },
     "macos-arm64": {
       "path": "macos-arm64/libimage_ffmpeg.dylib",
-      "sha256": "53d256f5f2016db4078873f420acb22aef330b4172f0c6792a68c0fa21688df7"
+      "sha256": "db00e5fb482091c71126ca767582f5baee6fa4c59bcbbbf4581d6136e4034f9d"
     },
     "macos-x64": {
       "path": "macos-x64/libimage_ffmpeg.dylib",
-      "sha256": "8ecbca3a3f58d9919571b64c2240a4dcc256d0b78bebf2066cd81d7775ea1698"
+      "sha256": "534b985a1c26db85d8d66de0cf990d56c15e05de2235a61ee67635120e605151"
     },
     "windows-x64": {
       "path": "windows-x64/image_ffmpeg.dll",
-      "sha256": "452e08dc19af7d5e6429ce41a8b14522259ca3b49597d89a70fe9c0dceff5d1b"
+      "sha256": "082e4da5f20c4d161f88a4c8c4a152124b55a8447c632b11008cb067713e6e5f"
+    }
+  },
+  "web": {
+    "loader": {
+      "path": "lib/web/image_ffmpeg_loader.mjs",
+      "sha256": "c92212041a0e995c4eca90e55b32bdd9d70380a27f1c6fcbd922f2909a905116"
+    },
+    "worker": {
+      "path": "lib/web/image_ffmpeg_worker.mjs",
+      "sha256": "f97b988ef4b07e1c0772f10876d650ec2c6fea31783f4977fff56431028fdab1"
+    },
+    "module": {
+      "path": "lib/web/image_ffmpeg_module.mjs",
+      "sha256": "6f1281c8a1e6121c37598d064ab870bc659d666519161d1a6cf4462d7dbf5035"
+    },
+    "wasm": {
+      "path": "lib/web/image_ffmpeg_module.wasm",
+      "sha256": "1cf5e9ec3c3465f924c42eaa5083ff9cda3168a83ff55951c641db392e368a5c"
     }
   }
 }
