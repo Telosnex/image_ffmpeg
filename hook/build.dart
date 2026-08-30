@@ -25,6 +25,8 @@ void main(List<String> args) async {
   await build(args, (input, output) async {
     if (!input.config.buildCodeAssets) return;
 
+    final hookStopwatch = Stopwatch()..start();
+    final resolveAndVerifyStopwatch = Stopwatch()..start();
     final manifestFile = File.fromUri(
       input.packageRoot.resolve('native_artifacts/manifest.json'),
     );
@@ -72,7 +74,9 @@ void main(List<String> args) async {
         'got $digest.',
       );
     }
+    final resolveAndVerifyDuration = resolveAndVerifyStopwatch.elapsed;
 
+    final publishStopwatch = Stopwatch()..start();
     final outputDirectory = Directory.fromUri(input.outputDirectory);
     await outputDirectory.create(recursive: true);
     final outputName = os.dylibFileName('image_ffmpeg');
@@ -92,5 +96,27 @@ void main(List<String> args) async {
       manifestFile.uri,
       source.uri,
     ]);
+    final publishDuration = publishStopwatch.elapsed;
+
+    // hooks_runner adds the terminating newline while capturing this chunk.
+    stderr.write(
+      '[image_ffmpeg] Hook completed in '
+      '${_formatDuration(hookStopwatch.elapsed)} '
+      '(resolve/verify ${_formatDuration(resolveAndVerifyDuration)}, '
+      'publish/register ${_formatDuration(publishDuration)})',
+    );
   });
+}
+
+String _formatDuration(Duration duration) {
+  final millis = duration.inMilliseconds;
+  if (millis < 1000) return '${millis}ms';
+  final seconds = duration.inSeconds;
+  final remainderMillis = millis - seconds * 1000;
+  if (seconds < 60) {
+    return '$seconds.${(remainderMillis ~/ 100).toString()}s';
+  }
+  final minutes = seconds ~/ 60;
+  final remainderSeconds = seconds % 60;
+  return '${minutes}m ${remainderSeconds}s';
 }
