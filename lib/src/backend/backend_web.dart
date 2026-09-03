@@ -16,8 +16,11 @@ const _pixelFormatRgba8888 = 1;
 
 /// Flutter web bundles the pubspec-declared package assets at this app-origin
 /// path; it is resolved against the document base URI so `<base href>` works.
+// Version the default entry point by ABI. The Worker propagates this query to
+// its loader, generated module, and Wasm binary, preventing a browser/CDN from
+// combining assets from incompatible package revisions.
 const _flutterAssetWorkerUrl =
-    'assets/packages/image_ffmpeg/web/image_ffmpeg_worker.mjs';
+    'assets/packages/image_ffmpeg/web/image_ffmpeg_worker.mjs?v=$_abiVersion';
 
 /// Takes the API's call-time snapshot in JavaScript memory.
 ///

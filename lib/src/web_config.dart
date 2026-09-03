@@ -21,7 +21,9 @@ abstract final class ImageFfmpegWeb {
   /// same-origin and point this at the served `image_ffmpeg_worker.mjs`. The
   /// worker imports `image_ffmpeg_module.mjs` and `image_ffmpeg_module.wasm`
   /// through `image_ffmpeg_loader.mjs` relative to its own URL. All four web
-  /// assets must stay siblings.
+  /// assets must stay siblings. A query string on this URI is propagated to
+  /// all three sibling assets, allowing a host to use a per-build cache key
+  /// without risking a mixed-ABI module graph.
   /// Set this before the first [ImageFfmpeg] operation. The shared page-wide
   /// Worker pool keeps its original URL afterward.
   static Uri? workerUri;

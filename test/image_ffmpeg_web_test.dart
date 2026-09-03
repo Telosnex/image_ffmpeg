@@ -12,7 +12,11 @@ Future<Uint8List> _fetchFixture(String name) =>
     fetchTestAsset('fixtures/image_formats/sources/$name');
 
 void main() {
-  setUpAll(() => ImageFfmpegWeb.workerUri = servedWorkerUri);
+  setUpAll(
+    () => ImageFfmpegWeb.workerUri = servedWorkerUri.replace(
+      queryParameters: {'v': 'web-test-build'},
+    ),
+  );
   tearDownAll(() => ImageFfmpegWeb.workerUri = null);
 
   test('loads the Wasm worker and reports capabilities', () async {
