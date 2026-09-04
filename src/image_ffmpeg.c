@@ -5,6 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if (defined(__unix__) || defined(__APPLE__)) && !defined(__EMSCRIPTEN__)
+#include <sys/mman.h>
+#include <unistd.h>
+#define IMAGE_FFMPEG_HAS_DISCARDABLE_MAPPING 1
+#else
+#define IMAGE_FFMPEG_HAS_DISCARDABLE_MAPPING 0
+#endif
+
 #if defined(IMAGE_FFMPEG_WITH_FFMPEG)
 #include <libavcodec/avcodec.h>
 #include <libavcodec/version.h>
@@ -707,11 +715,285 @@ cleanup:
 #endif
 }
 
-IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba(
+#if defined(IMAGE_FFMPEG_WITH_FFMPEG)
+
+typedef struct image_ffmpeg_box_cell {
+  uint64_t red;
+  uint64_t green;
+  uint64_t blue;
+  uint64_t alpha;
+  uint64_t count;
+} image_ffmpeg_box_cell;
+
+static void image_ffmpeg_box_dimensions(uint32_t source_width,
+                                        uint32_t source_height,
+                                        uint32_t max_dimension,
+                                        uint32_t *destination_width,
+                                        uint32_t *destination_height) {
+  *destination_width = source_width;
+  *destination_height = source_height;
+  if (source_width <= max_dimension && source_height <= max_dimension)
+    return;
+
+  if (source_width >= source_height) {
+    *destination_width = max_dimension;
+    *destination_height =
+        (uint32_t)(((uint64_t)source_height * max_dimension) / source_width);
+  } else {
+    *destination_height = max_dimension;
+    *destination_width =
+        (uint32_t)(((uint64_t)source_width * max_dimension) / source_height);
+  }
+  if (*destination_width == 0)
+    *destination_width = 1;
+  if (*destination_height == 0)
+    *destination_height = 1;
+}
+
+static void image_ffmpeg_finish_box_row(const image_ffmpeg_box_cell *cells,
+                                        uint32_t destination_width,
+                                        uint32_t destination_y,
+                                        uint32_t alpha_mode,
+                                        uint8_t *destination) {
+  uint8_t *output_pixel =
+      destination + (size_t)destination_y * destination_width * 4u;
+  for (uint32_t x = 0; x < destination_width; x++, output_pixel += 4) {
+    const image_ffmpeg_box_cell *cell = cells + x;
+    if (cell->count == 0)
+      continue;
+    const uint64_t half = cell->count >> 1;
+    output_pixel[0] = (uint8_t)((cell->red + half) / cell->count);
+    output_pixel[1] = (uint8_t)((cell->green + half) / cell->count);
+    output_pixel[2] = (uint8_t)((cell->blue + half) / cell->count);
+    output_pixel[3] = alpha_mode == IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY
+                          ? 255u
+                          : (uint8_t)((cell->alpha + half) / cell->count);
+  }
+}
+
+typedef struct image_ffmpeg_rgba_scratch {
+  uint8_t *data;
+  size_t length;
+  size_t discarded_length;
+  int is_mapping;
+} image_ffmpeg_rgba_scratch;
+
+static int image_ffmpeg_allocate_rgba_scratch(
+    size_t length, image_ffmpeg_rgba_scratch *scratch) {
+  memset(scratch, 0, sizeof(*scratch));
+#if IMAGE_FFMPEG_HAS_DISCARDABLE_MAPPING
+  void *mapping = mmap(NULL, length, PROT_READ | PROT_WRITE,
+                       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (mapping != MAP_FAILED) {
+    scratch->data = (uint8_t *)mapping;
+    scratch->length = length;
+    scratch->is_mapping = 1;
+    return 0;
+  }
+#endif
+  scratch->data = (uint8_t *)malloc(length);
+  if (scratch->data == NULL) return -1;
+  scratch->length = length;
+  return 0;
+}
+
+static void image_ffmpeg_discard_rgba_scratch(
+    image_ffmpeg_rgba_scratch *scratch, size_t completed_length) {
+#if IMAGE_FFMPEG_HAS_DISCARDABLE_MAPPING
+  if (!scratch->is_mapping || completed_length <= scratch->discarded_length)
+    return;
+  const long system_page_size = sysconf(_SC_PAGESIZE);
+  if (system_page_size <= 0) return;
+  const size_t page_size = (size_t)system_page_size;
+  const size_t discard_end = (completed_length / page_size) * page_size;
+  if (discard_end <= scratch->discarded_length) return;
+  // The mapping remains valid for libswscale's full-frame destination offsets,
+  // but completed physical pages no longer contribute to resident memory.
+  (void)madvise(scratch->data + scratch->discarded_length,
+                discard_end - scratch->discarded_length, MADV_DONTNEED);
+  scratch->discarded_length = discard_end;
+#else
+  (void)scratch;
+  (void)completed_length;
+#endif
+}
+
+static void image_ffmpeg_release_rgba_scratch(
+    image_ffmpeg_rgba_scratch *scratch) {
+  if (scratch->data == NULL) return;
+#if IMAGE_FFMPEG_HAS_DISCARDABLE_MAPPING
+  if (scratch->is_mapping) {
+    (void)munmap(scratch->data, scratch->length);
+    memset(scratch, 0, sizeof(*scratch));
+    return;
+  }
+#endif
+  free(scratch->data);
+  memset(scratch, 0, sizeof(*scratch));
+}
+
+// Uses one full-frame libswscale context so every RGBA byte is identical to a
+// normal decode. Source slices make completed output rows available while the
+// conversion is in progress; each row is folded immediately. On POSIX native
+// targets, sparse virtual storage preserves libswscale's global destination
+// offsets while completed physical pages are discarded after accumulation.
+static int32_t image_ffmpeg_box_average_frame_rgba(
+    const AVFrame *frame, enum AVPixelFormat source_format,
+    int source_full_range, const uint8_t *external_alpha,
+    uint32_t max_dimension, uint32_t alpha_mode, image_ffmpeg_image *output) {
+  const uint32_t source_width = (uint32_t)frame->width;
+  const uint32_t source_height = (uint32_t)frame->height;
+  uint32_t destination_width;
+  uint32_t destination_height;
+  image_ffmpeg_box_dimensions(source_width, source_height, max_dimension,
+                              &destination_width, &destination_height);
+
+  const uint64_t destination_length =
+      (uint64_t)destination_width * destination_height * 4u;
+  const uint64_t scratch_length =
+      (uint64_t)source_width * source_height * 4u;
+  if (source_width > INT_MAX / 4u || destination_length > UINT32_MAX ||
+      scratch_length > SIZE_MAX ||
+      (uint64_t)destination_width * sizeof(image_ffmpeg_box_cell) > SIZE_MAX) {
+    return IMAGE_FFMPEG_ERROR_UNSUPPORTED;
+  }
+
+  int32_t status = IMAGE_FFMPEG_ERROR_DECODE;
+  uint8_t *destination = (uint8_t *)calloc(1, (size_t)destination_length);
+  image_ffmpeg_box_cell *cells = (image_ffmpeg_box_cell *)calloc(
+      destination_width, sizeof(image_ffmpeg_box_cell));
+  image_ffmpeg_rgba_scratch scratch;
+  memset(&scratch, 0, sizeof(scratch));
+  struct SwsContext *scale_context = NULL;
+  if (destination == NULL || cells == NULL ||
+      image_ffmpeg_allocate_rgba_scratch((size_t)scratch_length, &scratch) < 0) {
+    status = IMAGE_FFMPEG_ERROR_OUT_OF_MEMORY;
+    goto cleanup;
+  }
+
+  const AVPixFmtDescriptor *description = av_pix_fmt_desc_get(source_format);
+  if (description == NULL) goto cleanup;
+  scale_context = sws_getContext(
+      frame->width, frame->height, source_format, frame->width, frame->height,
+      AV_PIX_FMT_RGBA, SWS_AREA, NULL, NULL, NULL);
+  if (scale_context == NULL ||
+      (source_full_range &&
+       image_ffmpeg_set_source_full_range(scale_context) < 0)) {
+    goto cleanup;
+  }
+
+  uint8_t *destination_data[4] = {scratch.data, NULL, NULL, NULL};
+  const int destination_linesize[4] = {(int)source_width * 4, 0, 0, 0};
+  uint32_t produced_y = 0;
+  uint32_t current_destination_y = 0;
+  for (uint32_t slice_start = 0; slice_start < source_height;
+       slice_start += 64u) {
+    const uint32_t slice_height =
+        source_height - slice_start < 64u ? source_height - slice_start : 64u;
+    const uint8_t *source_data[4] = {NULL, NULL, NULL, NULL};
+    for (int plane = 0; plane < 4; plane++) {
+      source_data[plane] = frame->data[plane];
+      if (source_data[plane] == NULL ||
+          ((description->flags & AV_PIX_FMT_FLAG_PAL) != 0 && plane == 1)) {
+        continue;
+      }
+      const int vertical_shift =
+          plane == 1 || plane == 2 ? description->log2_chroma_h : 0;
+      source_data[plane] += (ptrdiff_t)frame->linesize[plane] *
+                            (ptrdiff_t)(slice_start >> vertical_shift);
+    }
+
+    const int produced_rows =
+        sws_scale(scale_context, source_data, frame->linesize, (int)slice_start,
+                  (int)slice_height, destination_data, destination_linesize);
+    if (produced_rows < 0 ||
+        (uint32_t)produced_rows > source_height - produced_y) {
+      goto cleanup;
+    }
+
+    const uint32_t produced_end = produced_y + (uint32_t)produced_rows;
+    for (uint32_t source_y = produced_y; source_y < produced_end; source_y++) {
+      const uint32_t destination_y =
+          (uint32_t)(((uint64_t)source_y * destination_height) / source_height);
+      if (destination_y != current_destination_y) {
+        image_ffmpeg_finish_box_row(cells, destination_width,
+                                    current_destination_y, alpha_mode,
+                                    destination);
+        memset(cells, 0,
+               (size_t)destination_width * sizeof(image_ffmpeg_box_cell));
+        current_destination_y = destination_y;
+      }
+
+      const uint8_t *row =
+          scratch.data + (size_t)source_y * destination_linesize[0];
+      for (uint32_t destination_x = 0; destination_x < destination_width;
+           destination_x++) {
+        const uint32_t source_x_start =
+            destination_width == source_width
+                ? destination_x
+                : (uint32_t)(((uint64_t)destination_x * source_width +
+                              destination_width - 1u) /
+                             destination_width);
+        const uint32_t source_x_end =
+            destination_width == source_width
+                ? destination_x + 1u
+                : (uint32_t)(((uint64_t)(destination_x + 1u) * source_width +
+                              destination_width - 1u) /
+                             destination_width);
+        image_ffmpeg_box_cell *cell = cells + destination_x;
+        const uint8_t *pixel = row + (size_t)source_x_start * 4u;
+        for (uint32_t source_x = source_x_start; source_x < source_x_end;
+             source_x++, pixel += 4) {
+          const uint8_t alpha =
+              external_alpha == NULL
+                  ? pixel[3]
+                  : external_alpha[(size_t)source_y * source_width + source_x];
+          if (alpha_mode == IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY &&
+              alpha != 255u) {
+            continue;
+          }
+          cell->red += pixel[0];
+          cell->green += pixel[1];
+          cell->blue += pixel[2];
+          cell->alpha += alpha;
+          cell->count++;
+        }
+      }
+    }
+    produced_y = produced_end;
+    image_ffmpeg_discard_rgba_scratch(
+        &scratch, (size_t)produced_y * destination_linesize[0]);
+  }
+  if (produced_y != source_height) goto cleanup;
+
+  image_ffmpeg_finish_box_row(cells, destination_width, current_destination_y,
+                              alpha_mode, destination);
+  output->data = destination;
+  output->length = (uint32_t)destination_length;
+  output->width = destination_width;
+  output->height = destination_height;
+  output->stride = destination_width * 4u;
+  output->pixel_format = IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888;
+  destination = NULL;
+  status = IMAGE_FFMPEG_OK;
+
+cleanup:
+  sws_freeContext(scale_context);
+  image_ffmpeg_release_rgba_scratch(&scratch);
+  free(cells);
+  free(destination);
+  return status;
+}
+
+#endif
+
+static int32_t image_ffmpeg_decode_image_rgba_impl(
     const uint8_t *input,
     uint32_t input_length,
     uint32_t max_width,
     uint32_t max_height,
+    uint32_t box_max_dimension,
+    uint32_t box_alpha_mode,
     image_ffmpeg_image *output) {
   if (output == NULL) return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
   memset(output, 0, sizeof(*output));
@@ -927,36 +1209,38 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba(
     goto cleanup;
   }
 
-  const int rgba_size = av_image_get_buffer_size(
-      AV_PIX_FMT_RGBA, (int)destination_width, (int)destination_height, 1);
-  if (rgba_size < 0) goto cleanup;
-  rgba = (uint8_t *)malloc((size_t)rgba_size);
-  if (rgba == NULL) {
-    status = IMAGE_FFMPEG_ERROR_OUT_OF_MEMORY;
-    goto cleanup;
-  }
-
+  int rgba_size = 0;
   uint8_t *destination_data[4] = {NULL, NULL, NULL, NULL};
   int destination_linesize[4] = {0, 0, 0, 0};
-  if (av_image_fill_arrays(destination_data, destination_linesize, rgba,
-                           AV_PIX_FMT_RGBA, (int)destination_width,
-                           (int)destination_height, 1) < 0) {
-    goto cleanup;
-  }
-
   int source_full_range = frame->color_range == AVCOL_RANGE_JPEG;
   enum AVPixelFormat source_format = image_ffmpeg_normalize_source_format(
       (enum AVPixelFormat)frame->format, &source_full_range);
-  scale_context = sws_getContext(
-      frame->width, frame->height, source_format, (int)destination_width,
-      (int)destination_height, AV_PIX_FMT_RGBA, SWS_AREA, NULL, NULL, NULL);
-  if (scale_context == NULL ||
-      (source_full_range &&
-       image_ffmpeg_set_source_full_range(scale_context) < 0) ||
-      sws_scale(scale_context, (const uint8_t *const *)frame->data,
-                frame->linesize, 0, frame->height, destination_data,
-                destination_linesize) != (int)destination_height) {
-    goto cleanup;
+  if (box_max_dimension == 0) {
+    rgba_size = av_image_get_buffer_size(
+        AV_PIX_FMT_RGBA, (int)destination_width, (int)destination_height, 1);
+    if (rgba_size < 0) goto cleanup;
+    rgba = (uint8_t *)malloc((size_t)rgba_size);
+    if (rgba == NULL) {
+      status = IMAGE_FFMPEG_ERROR_OUT_OF_MEMORY;
+      goto cleanup;
+    }
+    if (av_image_fill_arrays(destination_data, destination_linesize, rgba,
+                             AV_PIX_FMT_RGBA, (int)destination_width,
+                             (int)destination_height, 1) < 0) {
+      goto cleanup;
+    }
+
+    scale_context = sws_getContext(
+        frame->width, frame->height, source_format, (int)destination_width,
+        (int)destination_height, AV_PIX_FMT_RGBA, SWS_AREA, NULL, NULL, NULL);
+    if (scale_context == NULL ||
+        (source_full_range &&
+         image_ffmpeg_set_source_full_range(scale_context) < 0) ||
+        sws_scale(scale_context, (const uint8_t *const *)frame->data,
+                  frame->linesize, 0, frame->height, destination_data,
+                  destination_linesize) != (int)destination_height) {
+      goto cleanup;
+    }
   }
 
   if (alpha_frame != NULL || ico_alpha != NULL) {
@@ -1004,12 +1288,21 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba(
                   alpha_linesize) != (int)destination_height) {
       goto cleanup;
     }
-    for (uint32_t y = 0; y < destination_height; y++) {
-      for (uint32_t x = 0; x < destination_width; x++) {
-        rgba[(size_t)y * destination_linesize[0] + (size_t)x * 4 + 3] =
-            alpha[(size_t)y * destination_width + x];
+    if (box_max_dimension == 0) {
+      for (uint32_t y = 0; y < destination_height; y++) {
+        for (uint32_t x = 0; x < destination_width; x++) {
+          rgba[(size_t)y * destination_linesize[0] + (size_t)x * 4 + 3] =
+              alpha[(size_t)y * destination_width + x];
+        }
       }
     }
+  }
+
+  if (box_max_dimension != 0) {
+    status = image_ffmpeg_box_average_frame_rgba(
+        frame, source_format, source_full_range, alpha, box_max_dimension,
+        box_alpha_mode, output);
+    goto cleanup;
   }
 
   output->data = rgba;
@@ -1042,110 +1335,17 @@ cleanup:
 #else
   (void)max_width;
   (void)max_height;
+  (void)box_max_dimension;
+  (void)box_alpha_mode;
   return IMAGE_FFMPEG_ERROR_FFMPEG_NOT_LINKED;
 #endif
 }
 
-static int32_t image_ffmpeg_box_average_rgba(
-    image_ffmpeg_image *image, uint32_t max_dimension, uint32_t alpha_mode) {
-  if (image == NULL || image->data == NULL || image->width == 0 ||
-      image->height == 0 || image->stride < image->width * 4u ||
-      image->pixel_format != IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888 ||
-      max_dimension == 0 ||
-      alpha_mode > IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY) {
-    return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
-  }
-
-  const uint32_t source_width = image->width;
-  const uint32_t source_height = image->height;
-  uint32_t destination_width = source_width;
-  uint32_t destination_height = source_height;
-  if (source_width > max_dimension || source_height > max_dimension) {
-    if (source_width >= source_height) {
-      destination_width = max_dimension;
-      destination_height = (uint32_t)(
-          ((uint64_t)source_height * max_dimension) / source_width);
-    } else {
-      destination_height = max_dimension;
-      destination_width = (uint32_t)(
-          ((uint64_t)source_width * max_dimension) / source_height);
-    }
-    if (destination_width == 0) destination_width = 1;
-    if (destination_height == 0) destination_height = 1;
-  }
-
-  const uint64_t destination_length =
-      (uint64_t)destination_width * destination_height * 4u;
-  if (destination_length > UINT32_MAX) {
-    return IMAGE_FFMPEG_ERROR_UNSUPPORTED;
-  }
-  uint8_t *destination = (uint8_t *)calloc(1, (size_t)destination_length);
-  if (destination == NULL) return IMAGE_FFMPEG_ERROR_OUT_OF_MEMORY;
-
-  for (uint32_t destination_y = 0; destination_y < destination_height;
-       destination_y++) {
-    const uint32_t source_y_start = (uint32_t)(
-        ((uint64_t)destination_y * source_height + destination_height - 1u) /
-        destination_height);
-    const uint32_t source_y_end = (uint32_t)(
-        ((uint64_t)(destination_y + 1u) * source_height +
-         destination_height - 1u) /
-        destination_height);
-    for (uint32_t destination_x = 0; destination_x < destination_width;
-         destination_x++) {
-      const uint32_t source_x_start = (uint32_t)(
-          ((uint64_t)destination_x * source_width + destination_width - 1u) /
-          destination_width);
-      const uint32_t source_x_end = (uint32_t)(
-          ((uint64_t)(destination_x + 1u) * source_width +
-           destination_width - 1u) /
-          destination_width);
-      uint64_t red = 0;
-      uint64_t green = 0;
-      uint64_t blue = 0;
-      uint64_t alpha = 0;
-      uint64_t count = 0;
-      for (uint32_t source_y = source_y_start; source_y < source_y_end;
-           source_y++) {
-        const uint8_t *pixel = image->data +
-                               (size_t)source_y * image->stride +
-                               (size_t)source_x_start * 4u;
-        for (uint32_t source_x = source_x_start; source_x < source_x_end;
-             source_x++, pixel += 4) {
-          if (alpha_mode == IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY &&
-              pixel[3] != 255u) {
-            continue;
-          }
-          red += pixel[0];
-          green += pixel[1];
-          blue += pixel[2];
-          alpha += pixel[3];
-          count++;
-        }
-      }
-      if (count == 0) continue;
-
-      const uint64_t half = count >> 1;
-      uint8_t *output_pixel =
-          destination +
-          ((size_t)destination_y * destination_width + destination_x) * 4u;
-      output_pixel[0] = (uint8_t)((red + half) / count);
-      output_pixel[1] = (uint8_t)((green + half) / count);
-      output_pixel[2] = (uint8_t)((blue + half) / count);
-      output_pixel[3] =
-          alpha_mode == IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY
-              ? 255u
-              : (uint8_t)((alpha + half) / count);
-    }
-  }
-
-  free(image->data);
-  image->data = destination;
-  image->length = (uint32_t)destination_length;
-  image->width = destination_width;
-  image->height = destination_height;
-  image->stride = destination_width * 4u;
-  return IMAGE_FFMPEG_OK;
+IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba(
+    const uint8_t *input, uint32_t input_length, uint32_t max_width,
+    uint32_t max_height, image_ffmpeg_image *output) {
+  return image_ffmpeg_decode_image_rgba_impl(
+      input, input_length, max_width, max_height, 0, 0, output);
 }
 
 IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba_box_average(
@@ -1158,12 +1358,8 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba_box_average(
     return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
   }
 
-  int32_t status =
-      image_ffmpeg_decode_image_rgba(input, input_length, 0, 0, output);
-  if (status != IMAGE_FFMPEG_OK) return status;
-  status = image_ffmpeg_box_average_rgba(output, max_dimension, alpha_mode);
-  if (status != IMAGE_FFMPEG_OK) image_ffmpeg_image_release(output);
-  return status;
+  return image_ffmpeg_decode_image_rgba_impl(
+      input, input_length, 0, 0, max_dimension, alpha_mode, output);
 }
 
 #if defined(IMAGE_FFMPEG_WITH_FFMPEG)

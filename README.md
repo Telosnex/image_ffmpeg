@@ -105,12 +105,15 @@ It is intended for high-frequency screenshot masking where transferring a full
 RGBA frame into Dart solely to overwrite a rectangle would dominate memory
 traffic.
 
-`decodeImageBoxAverage` instead decodes at full resolution and assigns every
-source pixel to exactly one destination cell using fixed integer boundaries and
-half-up rounding. The full RGBA intermediate remains inside the native helper
-isolate or browser Worker; only the small folded image crosses back to Dart.
-Callers can average all RGBA samples or retain only fully opaque samples for
-stable palette and theme-color extraction.
+`decodeImageBoxAverage` instead decodes the full codec-native frame, feeds it
+through one full-geometry color conversion in 64-row source slices, and
+immediately assigns each completed RGBA row to fixed integer destination cells
+with half-up rounding. POSIX native targets use sparse scratch storage and
+discard completed physical pages, avoiding a resident full-resolution RGBA
+intermediate while preserving byte-identical full-frame color conversion. Only
+the small folded image crosses back from the native helper isolate or browser
+Worker. Callers can average all RGBA samples or retain only fully opaque samples
+for stable palette and theme-color extraction.
 
 The image allow-list is JPEG, PNG/APNG, static and animated WebP, GIF, BMP,
 TIFF, AVIF, PSD, and ICO; the reduced Wasm build includes the same codecs.

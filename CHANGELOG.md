@@ -22,8 +22,8 @@
   operations. Browser Worker/Wasm resources are package-managed and live for
   the page lifetime instead of being repeatedly initialized and destroyed.
 - Add deterministic integer-only box-average decode with configurable alpha
-  handling while retaining the full-resolution RGBA intermediate inside the
-  native helper isolate or browser Worker.
+  handling. POSIX native targets fold completed RGBA rows immediately and
+  discard their scratch pages, avoiding a resident full-resolution RGBA image.
 - Add a versioned, fixed-width C shim ABI.
 - Bundle SHA-256-verified reduced FFmpeg native code assets for Android
   armv7/arm64/x64, iOS arm64 device and arm64/x64 simulator, Linux arm64/x64,

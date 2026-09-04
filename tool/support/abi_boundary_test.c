@@ -104,6 +104,61 @@ int main(int argc, char **argv) {
   image_ffmpeg_image_release(&decoded);
   check_image_zero(&decoded);
 
+  for (uint32_t alpha_mode = IMAGE_FFMPEG_BOX_ALPHA_INCLUDE;
+       alpha_mode <= IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY; alpha_mode++) {
+    CHECK(image_ffmpeg_decode_image_rgba_box_average(png.data, png.length, 7,
+                                                     alpha_mode, &decoded) ==
+          IMAGE_FFMPEG_OK);
+    CHECK(decoded.width == 7 && decoded.height == 5 && decoded.stride == 28 &&
+          decoded.pixel_format == IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888);
+    for (uint32_t destination_y = 0; destination_y < decoded.height;
+         destination_y++) {
+      const uint32_t source_y_start =
+          (destination_y * height + decoded.height - 1) / decoded.height;
+      const uint32_t source_y_end =
+          ((destination_y + 1) * height + decoded.height - 1) / decoded.height;
+      for (uint32_t destination_x = 0; destination_x < decoded.width;
+           destination_x++) {
+        const uint32_t source_x_start =
+            (destination_x * width + decoded.width - 1) / decoded.width;
+        const uint32_t source_x_end =
+            ((destination_x + 1) * width + decoded.width - 1) / decoded.width;
+        uint64_t sums[4] = {0, 0, 0, 0};
+        uint64_t count = 0;
+        for (uint32_t source_y = source_y_start; source_y < source_y_end;
+             source_y++) {
+          for (uint32_t source_x = source_x_start; source_x < source_x_end;
+               source_x++) {
+            const uint8_t *pixel = rgba + source_y * stride + source_x * 4;
+            if (alpha_mode == IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY &&
+                pixel[3] != 255) {
+              continue;
+            }
+            for (uint32_t channel = 0; channel < 4; channel++) {
+              sums[channel] += pixel[channel];
+            }
+            count++;
+          }
+        }
+        const uint8_t *actual =
+            decoded.data + destination_y * decoded.stride + destination_x * 4;
+        if (count == 0) {
+          CHECK(actual[0] == 0 && actual[1] == 0 && actual[2] == 0 &&
+                actual[3] == 0);
+          continue;
+        }
+        const uint64_t half = count >> 1;
+        CHECK(actual[0] == (uint8_t)((sums[0] + half) / count));
+        CHECK(actual[1] == (uint8_t)((sums[1] + half) / count));
+        CHECK(actual[2] == (uint8_t)((sums[2] + half) / count));
+        CHECK(actual[3] == (alpha_mode == IMAGE_FFMPEG_BOX_ALPHA_OPAQUE_ONLY
+                                ? 255
+                                : (uint8_t)((sums[3] + half) / count)));
+      }
+    }
+    image_ffmpeg_image_release(&decoded);
+  }
+
   image_ffmpeg_buffer jpeg = {0};
   CHECK(image_ffmpeg_encode_jpeg_rgba(
             rgba, sizeof(rgba), width, height, stride, 92,

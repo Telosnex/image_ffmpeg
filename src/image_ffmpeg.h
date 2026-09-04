@@ -158,11 +158,12 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba(
     uint32_t max_height,
     image_ffmpeg_image *output);
 
-// Decodes the first frame at full resolution, then fits it within a square and
-// folds every source pixel into exactly one destination cell using integer-only
-// box averaging. Decode and fold remain inside native/Wasm memory, so only the
-// small deterministic RGBA result crosses the language boundary. The result is
-// never upscaled and max_dimension must be nonzero.
+// Decodes the first frame at full resolution and folds completed RGBA rows
+// immediately into integer-only destination cells. POSIX native targets
+// discard completed scratch pages, avoiding a resident full-resolution RGBA
+// intermediate while preserving byte-identical full-frame color conversion.
+// Only the small deterministic result crosses the language boundary. The result
+// is never upscaled and max_dimension must be nonzero.
 IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_decode_image_rgba_box_average(
     const uint8_t *input,
     uint32_t input_length,

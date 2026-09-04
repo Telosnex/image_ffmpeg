@@ -463,6 +463,95 @@ void main() {
     }
   });
 
+  test('streamed box averaging is exact across strip boundaries', () async {
+    const width = 91;
+    const height = 137;
+    final source = RgbaImage(
+      width: width,
+      height: height,
+      stride: width * 4,
+      bytes: Uint8List.fromList([
+        for (var y = 0; y < height; y++)
+          for (var x = 0; x < width; x++) ...[
+            (x * 17 + y * 3) & 0xff,
+            (x * 5 + y * 29) & 0xff,
+            (x * 31 + y * 11) & 0xff,
+            (x + y) % 7 == 0 ? 127 : 255,
+          ],
+      ]),
+    );
+    final png = await ImageFfmpeg.encodePng(source);
+    final jpeg420 = await ImageFfmpeg.encodeJpeg(source, quality: 100);
+    final jpeg444 = await ImageFfmpeg.encodeJpeg(
+      source,
+      quality: 100,
+      chroma: JpegChroma.yuv444,
+    );
+
+    for (final (:format, :encoded) in [
+      (format: 'png', encoded: png),
+      (format: 'jpeg420', encoded: jpeg420),
+      (format: 'jpeg444', encoded: jpeg444),
+    ]) {
+      final decoded = await ImageFfmpeg.decodeImage(encoded);
+      for (final maxDimension in [43, 200]) {
+        for (final alphaMode in BoxAverageAlphaMode.values) {
+          final actual = await ImageFfmpeg.decodeImageBoxAverage(
+            encoded,
+            maxDimension: maxDimension,
+            alphaMode: alphaMode,
+          );
+          final expected = _referenceBoxAverage(
+            decoded,
+            maxDimension: maxDimension,
+            alphaMode: alphaMode,
+          );
+          expect(
+            (actual.width, actual.height, actual.stride),
+            (expected.width, expected.height, expected.stride),
+          );
+          expect(
+            actual.bytes,
+            expected.bytes,
+            reason:
+                'format=$format, maxDimension=$maxDimension, '
+                'alphaMode=${alphaMode.name}',
+          );
+        }
+      }
+    }
+  });
+
+  test('streamed box averaging matches every supported fixture', () async {
+    final sources =
+        Directory(
+            'test/fixtures/image_formats/sources',
+          ).listSync().whereType<File>().toList()
+          ..sort((left, right) => left.path.compareTo(right.path));
+
+    for (final source in sources) {
+      final encoded = await source.readAsBytes();
+      final decoded = await ImageFfmpeg.decodeImage(encoded);
+      for (final alphaMode in BoxAverageAlphaMode.values) {
+        final actual = await ImageFfmpeg.decodeImageBoxAverage(
+          encoded,
+          maxDimension: 31,
+          alphaMode: alphaMode,
+        );
+        final expected = _referenceBoxAverage(
+          decoded,
+          maxDimension: 31,
+          alphaMode: alphaMode,
+        );
+        expect(
+          actual.bytes,
+          expected.bytes,
+          reason: '${source.path}, alphaMode=${alphaMode.name}',
+        );
+      }
+    }
+  });
+
   test('validates arguments before entering the backend', () async {
     expect(() => ImageFfmpeg.decodeImage(Uint8List(0)), throwsArgumentError);
     expect(

@@ -40,7 +40,7 @@
     },
     "linux-arm64": {
       "path": "linux-arm64/libimage_ffmpeg.so",
-      "sha256": "efd0b7e5c2931b8572ac774e7b0f29673d36e20f3b2c05385ddd19aa49edfb14"
+      "sha256": "229977cf601f9714e9c6b4a85e2e3aedc534a745a9d8e0922c8e5a2dafe36743"
     },
     "linux-x64": {
       "path": "linux-x64/libimage_ffmpeg.so",
@@ -48,7 +48,7 @@
     },
     "macos-arm64": {
       "path": "macos-arm64/libimage_ffmpeg.dylib",
-      "sha256": "db00e5fb482091c71126ca767582f5baee6fa4c59bcbbbf4581d6136e4034f9d"
+      "sha256": "6302ee12e646fea6e83388c09132bb1b4daad532bf4d3680dca9c453eaf18df2"
     },
     "macos-x64": {
       "path": "macos-x64/libimage_ffmpeg.dylib",
@@ -66,7 +66,7 @@
     },
     "worker": {
       "path": "lib/web/image_ffmpeg_worker.mjs",
-      "sha256": "f97b988ef4b07e1c0772f10876d650ec2c6fea31783f4977fff56431028fdab1"
+      "sha256": "2a18209091eece33de82199950a250080dbc2cb5993b8ecf06570ee09ec698d6"
     },
     "module": {
       "path": "lib/web/image_ffmpeg_module.mjs",
