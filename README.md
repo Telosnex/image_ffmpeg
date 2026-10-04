@@ -184,7 +184,7 @@ rather than structured-cloned.
 | iOS | arm64 device; arm64/x64 simulator | iOS 13 (arm64 simulator 14) |
 | Linux | arm64, x64 | glibc 2.31 |
 | macOS | arm64, x64 | macOS 12 |
-| Windows | x64 | Windows 10 |
+| Windows | arm64, x64 | Windows 10 |
 
 The build hook selects the target tuple, verifies the committed artifact's
 SHA-256, and emits it as a bundled Dart code asset. A package verifier also
@@ -296,6 +296,7 @@ Reproduce native artifacts from immutable source commits:
 ./tool/build_native_artifact.sh macos-arm64
 ./tool/build_native_linux_docker.sh linux-x64
 ./tool/build_native_windows_docker.sh windows-x64
+./tool/build_native_windows_docker.sh windows-arm64
 ```
 
 See `tool/build_native_artifact.sh` for the complete Apple and Android target

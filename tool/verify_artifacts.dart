@@ -20,6 +20,7 @@ const _nativeTargets = {
   'linux-x64',
   'macos-arm64',
   'macos-x64',
+  'windows-arm64',
   'windows-x64',
 };
 

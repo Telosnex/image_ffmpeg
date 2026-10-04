@@ -1,10 +1,13 @@
 ## 0.0.1
 
+- Add a pinned Windows arm64 artifact cross-built with llvm-mingw UCRT and
+  verified with the 6,144-case ABI boundary suite and the package and
+  native corpus Dart suites on Windows 11 arm64.
 - Remove unreleased JPEG-only Dart/C compatibility aliases and replace the
   `_ex` encoder with one canonical ABI 5 JPEG operation.
 - Give all boundary-crossing Dart enums explicit checked wire values rather
   than relying on declaration-order `.index` coupling.
-- Extend the production manifest to lock all 11 native artifacts plus the
+- Extend the production manifest to lock all 12 native artifacts plus the
   Worker, loader, Emscripten module, Wasm, source pins, and profile.
 - Add a direct C ownership/security corpus with 6,144 deterministic malformed
   calls and run it under AddressSanitizer and UndefinedBehaviorSanitizer.

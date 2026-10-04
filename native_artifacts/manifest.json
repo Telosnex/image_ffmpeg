@@ -11,6 +11,7 @@
     "android": "NDK 28.2.13676358, clang 19.0.1",
     "linux": "Debian 11 amd64, GCC 10.2.1",
     "windows": "Debian 11 amd64, MinGW-w64 GCC 10.2.1",
+    "windows-arm64": "Debian 12 (bookworm-slim abd67ffc platform image), llvm-mingw 20260922 UCRT (LLVM/clang)",
     "web": "Emscripten 5.0.0 a7c5deab, Node 22.16.0"
   },
   "artifacts": {
@@ -53,6 +54,10 @@
     "macos-x64": {
       "path": "macos-x64/libimage_ffmpeg.dylib",
       "sha256": "534b985a1c26db85d8d66de0cf990d56c15e05de2235a61ee67635120e605151"
+    },
+    "windows-arm64": {
+      "path": "windows-arm64/image_ffmpeg.dll",
+      "sha256": "8e5cbe4216edf925c822112d0509d5115fdd85f1889ccf6913426b1851482f09"
     },
     "windows-x64": {
       "path": "windows-x64/image_ffmpeg.dll",

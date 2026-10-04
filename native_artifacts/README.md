@@ -39,6 +39,7 @@ definition. Licenses and notices are under `licenses/`.
 | Linux x64 | glibc 2.31 | `041f381e57f624177ba59fa3d60f4ff4fdda5ba4dbee81040992b0bb956fb655` |
 | macOS arm64 | macOS 12 | `6302ee12e646fea6e83388c09132bb1b4daad532bf4d3680dca9c453eaf18df2` |
 | macOS x64 | macOS 12 | `534b985a1c26db85d8d66de0cf990d56c15e05de2235a61ee67635120e605151` |
+| Windows arm64 | Windows 10 UCRT | `8e5cbe4216edf925c822112d0509d5115fdd85f1889ccf6913426b1851482f09` |
 | Windows x64 | Windows 10 | `082e4da5f20c4d161f88a4c8c4a152124b55a8447c632b11008cb067713e6e5f` |
 | Browser Wasm | Emscripten 5.0.0 | `1cf5e9ec3c3465f924c42eaa5083ff9cda3168a83ff55951c641db392e368a5c` |
 
@@ -59,7 +60,18 @@ tool/build_native_artifact.sh android-arm64
 tool/build_native_linux_docker.sh linux-x64
 tool/build_native_linux_docker.sh linux-arm64
 tool/build_native_windows_docker.sh windows-x64
+
+# Debian 12 plus SHA-256-pinned llvm-mingw 20260922 (GCC has no Windows arm64):
+tool/build_native_windows_docker.sh windows-arm64
 ```
+
+The Windows arm64 DLL imports only system DLLs: KERNEL32, bcrypt, and the
+Universal C Runtime API sets present on Windows 10 and later. Wine cannot run
+it; verify it on a Windows arm64 host by building
+`tool/support/abi_boundary_test.c` with the same llvm-mingw release against an
+import library generated from `src/exports_windows.def`, running it beside the
+committed DLL, then running `dart test` in the package and `native_test` with a
+`windows_arm64` Dart SDK.
 
 `tool/build_native_artifact.sh` lists every direct target. Fetching verifies
 immutable source commits. Building verifies architecture, exported symbols and

@@ -19,7 +19,7 @@ Targets:
   ios-x64-iphonesimulator
   android-arm              android-arm64              android-x64
   linux-arm64              linux-x64
-  windows-x64
+  windows-arm64            windows-x64
 
 Apple targets require Xcode, Android targets require ANDROID_NDK_HOME (or a
 standard Android SDK installation), and Linux/Windows targets use Linux
@@ -208,6 +208,35 @@ case "$target" in
       -Wl,--enable-auto-image-base -Wl,--no-insert-timestamp
     )
     verification_tool="${OBJDUMP:-x86_64-w64-mingw32-objdump}"
+    system_libraries=(-lm -lbcrypt)
+    ;;
+  windows-arm64)
+    os=windows
+    [[ "$(uname -s)" == Linux ]] || {
+      echo 'Windows artifacts must be cross-built on Linux (use tool/build_native_windows_docker.sh).' >&2
+      exit 1
+    }
+    # GCC has no Windows arm64 target. The pinned llvm-mingw toolchain targets
+    # UCRT; the shim and its static dependencies are C, so no C++ runtime ships.
+    ffmpeg_arch=aarch64; artifact_arch=aarch64
+    cc="${CC:-aarch64-w64-mingw32-clang}"
+    cxx="${CXX:-aarch64-w64-mingw32-clang++}"
+    ar="${AR:-llvm-ar}"
+    ranlib="${RANLIB:-llvm-ranlib}"
+    strip_tool="${STRIP:-aarch64-w64-mingw32-strip}"
+    configure_platform_args=(
+      --target-os=mingw32 --arch=aarch64 --enable-cross-compile
+      --cross-prefix=aarch64-w64-mingw32- --nm=llvm-nm
+    )
+    cmake_platform_args=(
+      -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_SYSTEM_PROCESSOR=ARM64
+      -DCMAKE_C_COMPILER="$cc" -DCMAKE_CXX_COMPILER="$cxx"
+      -DCMAKE_AR="$(command -v "$ar")" -DCMAKE_RANLIB="$(command -v "$ranlib")"
+      -DCMAKE_RC_COMPILER=aarch64-w64-mingw32-windres
+    )
+    output_name=image_ffmpeg.dll
+    shared_flags=(-shared -Wl,--no-insert-timestamp)
+    verification_tool="${READOBJ:-llvm-readobj}"
     system_libraries=(-lm -lbcrypt)
     ;;
   linux-arm64|linux-x64)
@@ -417,7 +446,16 @@ case "$os" in
     fi
     ;;
   windows)
-    if "$verification_tool" -p "$artifact" | grep -Ei \
+    if [[ "$target" == windows-arm64 ]]; then
+      "$verification_tool" --file-headers "$artifact" \
+        | grep -E 'Machine: IMAGE_FILE_MACHINE_ARM64 ' >/dev/null || {
+          echo 'Unexpected PE machine: expected IMAGE_FILE_MACHINE_ARM64.' >&2; exit 1;
+        }
+      if "$verification_tool" --coff-imports "$artifact" | grep -Ei \
+        'Name:.*(avcodec|avformat|avutil|swscale|aom|zlib|libgcc|libc\+\+|libunwind|winpthread)'; then
+        echo 'Artifact unexpectedly has a bundled-library/runtime dependency.' >&2; exit 1;
+      fi
+    elif "$verification_tool" -p "$artifact" | grep -Ei \
       'DLL Name:.*(avcodec|avformat|avutil|swscale|aom|zlib|libgcc|libstdc|winpthread)'; then
       echo 'Artifact unexpectedly has a bundled-library/runtime dependency.' >&2; exit 1;
     fi
@@ -439,9 +477,15 @@ case "$os" in
       | sed 's/@@.*//' | grep '^image_ffmpeg_' | sort > "$actual_exports"
     ;;
   windows)
+    if [[ "$target" == windows-arm64 ]]; then
+      "$verification_tool" --coff-exports "$artifact" \
+        | awk '$1 == "Name:" && $2 ~ /^image_ffmpeg_/ { print $2 }' \
+        | sort > "$actual_exports"
+    else
     "$verification_tool" -p "$artifact" \
       | awk '/\[[[:space:]]*[0-9]+\] image_ffmpeg_/ {print $NF}' \
       | sort > "$actual_exports"
+    fi
     ;;
 esac
 sort "$exports" > "$build_root/expected_exports.txt"
