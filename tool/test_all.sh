@@ -15,6 +15,7 @@ browser_tests=(
 
 dart analyze
 dart run tool/verify_artifacts.dart
+dart run native_prebuilt:check
 dart run tool/update_browser_corpus_manifest.dart --check
 dart test -r compact
 if [[ -d native_test ]]; then

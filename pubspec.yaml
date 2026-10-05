@@ -18,6 +18,10 @@ dependencies:
   crypto: ^3.0.6
   ffi: ^2.1.4
   hooks: ">=1.0.0 <3.0.0"
+  native_prebuilt:
+    git:
+      url: https://github.com/Telosnex/native_prebuilt.git
+      ref: c2d414c6a3dd34ad57be0952fe6eb291ccf945f7
 
 dev_dependencies:
   ffigen: ^20.1.1

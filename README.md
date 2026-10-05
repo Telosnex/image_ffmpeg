@@ -186,16 +186,35 @@ rather than structured-cloned.
 | macOS | arm64, x64 | macOS 12 |
 | Windows | arm64, x64 | Windows 10 |
 
-The build hook selects the target tuple, verifies the committed artifact's
-SHA-256, and emits it as a bundled Dart code asset. A package verifier also
-locks the Worker, loader, Emscripten module, and Wasm hashes. Unsupported tuples
-fail at build time rather than loading an FFmpeg-free scaffold. Exact source commits,
-checksums, licenses, dependency-closure checks, and reproduction commands are
-in [`native_artifacts/README.md`](native_artifacts/README.md).
+The build hook uses
+[native_prebuilt](https://github.com/Telosnex/native_prebuilt). If the package
+sources match `native_artifacts/prebuilt.json`, it downloads the library of
+the target from the GitHub release named there, checks its SHA-256, and emits
+it as a bundled Dart code asset. Otherwise it builds the library from source
+with `tool/build_native_artifact.sh`. The user define `native_build` (`auto`,
+`download` or `source`) changes this:
+
+```yaml
+hooks:
+  user_defines:
+    image_ffmpeg:
+      native_build: source
+```
+
+A source build needs CMake, git and the target compiler. Apple targets build
+on macOS, Android targets on macOS or Linux, and Linux and Windows targets on
+Linux (Windows with MinGW). A Windows host cannot build from source.
+
+A package verifier locks the Worker, loader, Emscripten module, and Wasm
+hashes. Unsupported tuples fail at build time rather than loading an
+FFmpeg-free scaffold. Exact source commits, licenses, dependency-closure
+checks, and reproduction commands are in
+[`native_artifacts/README.md`](native_artifacts/README.md).
 
 ## Current pieces
 
-- `hook/build.dart`: verifies and bundles the target-native production asset.
+- `hook/build.dart`: downloads and verifies the released library of the target,
+  or builds it from source.
 - `ffigen.yaml`: generates native `@Native` bindings from the stable header.
 - `lib/src/backend/backend_native.dart`: validates ABI, copies memory safely,
   and runs decode on a helper isolate.
@@ -208,8 +227,11 @@ in [`native_artifacts/README.md`](native_artifacts/README.md).
 - `lib/web/image_ffmpeg_module.{mjs,wasm}`: committed browser runtime bundled as
   Flutter package assets.
 - `tool/build_web.sh`: builds the current C shim to Wasm.
-- `tool/verify_artifacts.dart`: verifies exact source/profile pins, all 11
-  native tuples, and all four Web assets.
+- `tool/verify_artifacts.dart`: verifies exact source/profile pins and all four
+  Web assets. `dart run native_prebuilt:check` verifies the released native
+  libraries.
+- `.github/workflows/native_release.yml`: builds all 12 native targets with the
+  hook and publishes them as a GitHub release.
 - `tool/support/abi_boundary_test.c`: positive ownership checks and 6,144
   deterministic malformed descriptor/option/encoded-input cases.
 - `tool/fetch_ffmpeg.sh`: fetches the pinned upstream source.
@@ -225,10 +247,12 @@ tool/test_all.sh
 ```
 
 The authoritative gate includes analysis, source/artifact verification, native
-and browser fixture suites, deterministic operation recipes, exact macOS
-artifact execution, and ASan/UBSan. Set
-`IMAGE_FFMPEG_FULL_RUNTIME_MATRIX=1` to additionally execute the exact iOS,
-Android, Linux, and Windows artifacts.
+and browser fixture suites, deterministic operation recipes, macOS library
+execution, and ASan/UBSan. Set `IMAGE_FFMPEG_FULL_RUNTIME_MATRIX=1` to
+additionally execute the iOS, Android, Linux, and Windows libraries. The
+runtime scripts test `build/native_artifacts/<target>/`: a local build, or
+else the released file that `dart run tool/prebuilt_artifacts.dart <target>`
+downloads.
 
 Reproduce a generated operation failure as source/actual/expected/diff images:
 
@@ -251,7 +275,7 @@ corpus regenerates it automatically. CI verifies it independently with:
 dart run tool/update_browser_corpus_manifest.dart --check
 ```
 
-Run the native format corpus against the same pinned artifact shipped to
+Run the native format corpus against the library that the build hook gives
 consumers:
 
 ```bash
@@ -289,7 +313,8 @@ For a real browser run, link or copy the fixture to
 2.5 MiB with the pinned FFmpeg 9.0 release, libaom 3.12.1, the nine
 decode formats listed above, and JPEG/PNG encoders.
 
-Reproduce native artifacts from immutable source commits:
+Build native libraries from immutable source commits into
+`build/native_artifacts/<target>/`:
 
 ```bash
 ./tool/fetch_native_sources.sh
@@ -300,7 +325,9 @@ Reproduce native artifacts from immutable source commits:
 ```
 
 See `tool/build_native_artifact.sh` for the complete Apple and Android target
-matrix.
+matrix. To publish a release, push to branch `native-release` (or
+`native-release-dry` to build only), then merge the `native-manifest/<tag>`
+branch that the workflow pushes.
 
 ## Next milestones
 

@@ -1,122 +1,277 @@
+/// Bundles the image_ffmpeg shim library as a Dart code asset.
+///
+/// With package:native_prebuilt (fllama ADR 005), the hook downloads the
+/// library from the GitHub release in native_artifacts/prebuilt.json when the
+/// package sources match it (user define `native_build`: auto, download or
+/// source). Otherwise it runs tool/build_native_artifact.sh, which needs
+/// CMake, git and the target compiler. Apple targets build on macOS, Android
+/// targets on macOS or Linux, and Linux and Windows targets on Linux (Windows
+/// with MinGW).
+library;
+
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:code_assets/code_assets.dart';
 import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
+import 'package:native_prebuilt/native_prebuilt.dart';
 
 const _assetName = 'image_ffmpeg_bindings_generated.dart';
 
-final class _Artifact {
-  const _Artifact({required this.path, required this.sha256});
+/// The NDK of the release builds. A source build uses it if it is installed.
+const _androidNdkVersion = '28.2.13676358';
 
-  factory _Artifact.fromJson(Object? value, String key) {
-    if (value case {'path': final String path, 'sha256': final String sha256}) {
-      if (sha256.length == 64) return _Artifact(path: path, sha256: sha256);
-    }
-    throw FormatException('Invalid native artifact manifest entry for $key.');
-  }
-
-  final String path;
-  final String sha256;
-}
+const _targets = {
+  'android-arm',
+  'android-arm64',
+  'android-x64',
+  'ios-arm64-iphoneos',
+  'ios-arm64-iphonesimulator',
+  'ios-x64-iphonesimulator',
+  'linux-arm64',
+  'linux-x64',
+  'macos-arm64',
+  'macos-x64',
+  'windows-arm64',
+  'windows-x64',
+};
 
 void main(List<String> args) async {
   await build(args, (input, output) async {
     if (!input.config.buildCodeAssets) return;
 
-    final hookStopwatch = Stopwatch()..start();
-    final resolveAndVerifyStopwatch = Stopwatch()..start();
-    final manifestFile = File.fromUri(
-      input.packageRoot.resolve('native_artifacts/manifest.json'),
-    );
-    final manifest = jsonDecode(await manifestFile.readAsString());
-    if (manifest is! Map<String, Object?> || manifest['schema'] != 1) {
-      throw const FormatException('Unsupported native artifact manifest.');
-    }
-    final encodedArtifacts = manifest['artifacts'];
-    if (encodedArtifacts is! Map<String, Object?>) {
-      throw const FormatException('Native artifact manifest has no artifacts.');
-    }
-
-    final os = input.config.code.targetOS;
-    final architecture = input.config.code.targetArchitecture;
-    final sdkSuffix = os == OS.iOS
-        ? switch (input.config.code.iOS.targetSdk) {
-            IOSSdk.iPhoneOS => '-iphoneos',
-            IOSSdk.iPhoneSimulator => '-iphonesimulator',
-            final sdk => throw UnsupportedError('Unsupported iOS SDK: $sdk.'),
-          }
-        : '';
-    final key = '${os.name}-${architecture.name}$sdkSuffix';
-    final encodedArtifact = encodedArtifacts[key];
-    if (encodedArtifact == null) {
+    final stopwatch = Stopwatch()..start();
+    final target = TargetName.of(input.config.code);
+    if (!_targets.contains(target.name)) {
       throw UnsupportedError(
-        'image_ffmpeg has no pinned native artifact for $key. Supported '
-        'targets: ${encodedArtifacts.keys.join(', ')}.',
+        'image_ffmpeg has no native library for $target. Supported targets: '
+        '${_targets.join(', ')}.',
       );
     }
-    final artifact = _Artifact.fromJson(encodedArtifact, key);
-
-    final source = File.fromUri(
-      input.packageRoot.resolve('native_artifacts/${artifact.path}'),
-    );
-    if (!await source.exists()) {
-      throw StateError(
-        'Pinned image_ffmpeg artifact is missing: ${source.path}. Reinstall the '
-        'package or rebuild it with tool/build_native_artifact.sh $key.',
-      );
-    }
-    final digest = (await sha256.bind(source.openRead()).first).toString();
-    if (digest != artifact.sha256) {
-      throw StateError(
-        'SHA-256 mismatch for ${source.path}: expected ${artifact.sha256}, '
-        'got $digest.',
-      );
-    }
-    final resolveAndVerifyDuration = resolveAndVerifyStopwatch.elapsed;
-
-    final publishStopwatch = Stopwatch()..start();
-    final outputDirectory = Directory.fromUri(input.outputDirectory);
-    await outputDirectory.create(recursive: true);
-    final outputName = os.dylibFileName('image_ffmpeg');
-    final published = File.fromUri(input.outputDirectory.resolve(outputName));
-    await source.copy(published.path);
-
-    output.assets.code.add(
-      CodeAsset(
-        package: input.packageName,
-        name: _assetName,
-        linkMode: DynamicLoadingBundled(),
-        file: published.uri,
-      ),
-    );
-    output.dependencies.addAll([
-      input.packageRoot.resolve('hook/build.dart'),
-      manifestFile.uri,
-      source.uri,
-    ]);
-    final publishDuration = publishStopwatch.elapsed;
-
-    // hooks_runner adds the terminating newline while capturing this chunk.
-    stderr.write(
-      '[image_ffmpeg] Hook completed in '
-      '${_formatDuration(hookStopwatch.elapsed)} '
-      '(resolve/verify ${_formatDuration(resolveAndVerifyDuration)}, '
-      'publish/register ${_formatDuration(publishDuration)})',
-    );
+    await NativePrebuilt(
+      input: input,
+      output: output,
+      log: _log,
+    ).run((_) => _buildFromSource(input, output, target));
+    _log('Hook completed in ${_formatDuration(stopwatch.elapsed)}');
   });
+}
+
+void _log(String message) => stderr.writeln('[image_ffmpeg] $message');
+
+Future<void> _buildFromSource(
+  BuildInput input,
+  BuildOutputBuilder output,
+  TargetName target,
+) async {
+  final hostProblem = _hostProblem(target);
+  if (hostProblem != null) throw UnsupportedError('image_ffmpeg: $hostProblem');
+
+  final code = input.config.code;
+  final packageRoot = input.packageRoot;
+  final shared = input.outputDirectoryShared;
+  final environment = {
+    'IMAGE_FFMPEG_THIRD_PARTY': shared.resolve('sources').toFilePath(),
+    'IMAGE_FFMPEG_BUILD_JOBS': '${Platform.numberOfProcessors}',
+    if (target.os == OS.macOS)
+      'IMAGE_FFMPEG_MACOS_VERSION': '${code.macOS.targetVersion}.0',
+    if (target.os == OS.iOS)
+      'IMAGE_FFMPEG_IOS_VERSION': '${code.iOS.targetVersion}.0',
+    if (target.os == OS.android) ...{
+      'IMAGE_FFMPEG_ANDROID_API': '${code.android.targetNdkApi}',
+      'ANDROID_NDK_HOME': _androidNdk(),
+    },
+  };
+
+  // The pinned sources are shared by every target of this app. Two targets
+  // can build at once, so a lock guards the fetch and each build directory.
+  await _withLock(File.fromUri(shared.resolve('sources.lock')), () async {
+    await _run('Fetching the pinned sources', packageRoot, [
+      'tool/fetch_native_sources.sh',
+    ], environment);
+  });
+
+  // The build directory keeps the static FFmpeg, libaom and zlib libraries,
+  // so a change to src/ only relinks the shim. Its name depends on the build
+  // scripts, the settings and the compiler version.
+  final scripts = [
+    for (final path in [
+      'tool/build_native_artifact.sh',
+      'tool/pkg_config_aom.sh',
+      'tool/fetch_native_sources.sh',
+    ])
+      await File.fromUri(packageRoot.resolve(path)).readAsString(),
+  ];
+  final buildKey = sha256
+      .convert(
+        utf8.encode(
+          jsonEncode([
+            target.name,
+            environment,
+            scripts,
+            await _compilerVersion(target),
+          ]),
+        ),
+      )
+      .toString()
+      .substring(0, 16);
+  final buildRoot = shared.resolve('build/${target.name}-$buildKey/');
+  final library = File.fromUri(
+    input.outputDirectory.resolve(target.os.dylibFileName('image_ffmpeg')),
+  );
+  await Directory.fromUri(input.outputDirectory).create(recursive: true);
+
+  await _withLock(
+    File.fromUri(shared.resolve('build/${target.name}-$buildKey.lock')),
+    () => _run(
+      'Building $target',
+      packageRoot,
+      ['tool/build_native_artifact.sh', target.name],
+      {
+        ...environment,
+        'IMAGE_FFMPEG_BUILD_ROOT': buildRoot.toFilePath(),
+        'IMAGE_FFMPEG_OUTPUT': library.path,
+      },
+    ),
+  );
+
+  output.assets.code.add(
+    CodeAsset(
+      package: input.packageName,
+      name: _assetName,
+      linkMode: DynamicLoadingBundled(),
+      file: library.uri,
+    ),
+  );
+}
+
+/// Why this host cannot build [target] from source, or null if it can.
+String? _hostProblem(TargetName target) {
+  final (hosts, allowed) = switch (target.os) {
+    OS.iOS || OS.macOS => ('macOS', Platform.isMacOS),
+    OS.android => ('macOS or Linux', Platform.isMacOS || Platform.isLinux),
+    OS.linux => ('Linux', Platform.isLinux),
+    // MinGW cross-compiles the Windows libraries on Linux.
+    OS.windows => ('Linux, with MinGW', Platform.isLinux),
+    _ => ('no host', false),
+  };
+  if (allowed) return null;
+  return 'a source build of $target runs only on $hosts, and this host is '
+      '${Platform.operatingSystem}.';
+}
+
+/// The `--version` output of the compiler that tool/build_native_artifact.sh
+/// uses for [target]. For Android, the NDK path is in the build key instead.
+Future<String> _compilerVersion(TargetName target) async {
+  final command = switch (target.name) {
+    'linux-x64' => ['gcc'],
+    'linux-arm64' => ['aarch64-linux-gnu-gcc'],
+    'windows-x64' => ['x86_64-w64-mingw32-gcc'],
+    'windows-arm64' => ['aarch64-w64-mingw32-clang'],
+    _ when target.os == OS.iOS || target.os == OS.macOS => ['xcrun', 'clang'],
+    _ => null,
+  };
+  if (command == null) return '';
+  try {
+    final result = await Process.run(command.first, [
+      ...command.skip(1),
+      '--version',
+    ]);
+    return '${result.stdout}';
+  } on ProcessException {
+    return '';
+  }
+}
+
+/// The Android NDK: the release version if it is installed, else the NDK of
+/// the environment, else the newest NDK of the Android SDK.
+String _androidNdk() {
+  final env = Platform.environment;
+  final home = env['HOME'];
+  final sdks = [
+    ?env['ANDROID_HOME'],
+    ?env['ANDROID_SDK_ROOT'],
+    if (home != null) ...['$home/Library/Android/sdk', '$home/Android/Sdk'],
+  ].where((sdk) => Directory('$sdk/ndk').existsSync());
+  bool isNdk(String path) => File('$path/source.properties').existsSync();
+
+  final candidates = [
+    for (final sdk in sdks) '$sdk/ndk/$_androidNdkVersion',
+    ?env['ANDROID_NDK_HOME'],
+    ?env['ANDROID_NDK_ROOT'],
+    ?env['ANDROID_NDK'],
+    ?env['ANDROID_NDK_LATEST_HOME'],
+    for (final sdk in sdks)
+      ...(Directory('$sdk/ndk').listSync().whereType<Directory>().toList()
+            ..sort((a, b) => _compareVersions(b.path, a.path)))
+          .map((d) => d.path),
+  ];
+  for (final candidate in candidates) {
+    if (isNdk(candidate)) {
+      _log('Android NDK: $candidate');
+      return candidate;
+    }
+  }
+  throw StateError(
+    'image_ffmpeg: no Android NDK found. Install NDK $_androidNdkVersion with '
+    'the Android SDK manager, or set ANDROID_NDK_HOME.',
+  );
+}
+
+int _compareVersions(String a, String b) {
+  List<int> parts(String path) => [
+    for (final part in path.split(RegExp(r'[/\\]')).last.split('.'))
+      int.tryParse(part) ?? 0,
+  ];
+  final (x, y) = (parts(a), parts(b));
+  for (var i = 0; i < x.length && i < y.length; i++) {
+    if (x[i] != y[i]) return x[i].compareTo(y[i]);
+  }
+  return x.length.compareTo(y.length);
+}
+
+Future<void> _run(
+  String what,
+  Uri packageRoot,
+  List<String> bashArguments,
+  Map<String, String> environment,
+) async {
+  _log(what);
+  final stopwatch = Stopwatch()..start();
+  // bash runs the script, so the file mode of a checkout does not matter.
+  final process = await Process.start(
+    'bash',
+    bashArguments,
+    workingDirectory: packageRoot.toFilePath(),
+    environment: environment,
+    mode: ProcessStartMode.inheritStdio,
+  );
+  final exitCode = await process.exitCode;
+  if (exitCode != 0) {
+    throw StateError(
+      'image_ffmpeg: ${bashArguments.join(' ')} failed with exit code '
+      '$exitCode.',
+    );
+  }
+  _log('$what took ${_formatDuration(stopwatch.elapsed)}');
+}
+
+Future<T> _withLock<T>(File lockFile, Future<T> Function() action) async {
+  await lockFile.parent.create(recursive: true);
+  final handle = await lockFile.open(mode: FileMode.append);
+  try {
+    await handle.lock(FileLock.blockingExclusive);
+    return await action();
+  } finally {
+    await handle.close();
+  }
 }
 
 String _formatDuration(Duration duration) {
   final millis = duration.inMilliseconds;
   if (millis < 1000) return '${millis}ms';
   final seconds = duration.inSeconds;
-  final remainderMillis = millis - seconds * 1000;
-  if (seconds < 60) {
-    return '$seconds.${(remainderMillis ~/ 100).toString()}s';
-  }
-  final minutes = seconds ~/ 60;
-  final remainderSeconds = seconds % 60;
-  return '${minutes}m ${remainderSeconds}s';
+  if (seconds < 60) return '$seconds.${(millis % 1000) ~/ 100}s';
+  return '${seconds ~/ 60}m ${seconds % 60}s';
 }

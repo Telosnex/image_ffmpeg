@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# Runtime-test the exact committed Windows DLL under Wine.
+# Runtime-test the Windows x64 DLL under Wine.
+# The library in build/native_artifacts/<target>/ is a local build of
+# tool/build_native_artifact.sh, or else the released file
+# (tool/prebuilt_artifacts.dart downloads it).
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 command -v docker >/dev/null || { echo 'docker is required' >&2; exit 1; }
+[[ -f "$root/build/native_artifacts/windows-x64/image_ffmpeg.dll" ]] ||
+  (cd "$root" && dart run tool/prebuilt_artifacts.dart windows-x64)
 
 docker run --rm --platform linux/amd64 \
   -v "$root:/workspace" -w /workspace \
@@ -20,9 +25,9 @@ docker run --rm --platform linux/amd64 \
     x86_64-w64-mingw32-gcc-posix -std=c11 -O2 -Wall -Wextra -Werror \
       -static -static-libgcc -I src tool/support/abi_boundary_test.c \
       "$build/libimage_ffmpeg.dll.a" -o "$build/abi_boundary_test.exe"
-    cp native_artifacts/windows-x64/image_ffmpeg.dll "$build/"
+    cp build/native_artifacts/windows-x64/image_ffmpeg.dll "$build/"
     cd "$build"
     export WINEDEBUG=-all WINEPREFIX=/tmp/image-ffmpeg-wine
     /usr/lib/wine/wine64 ./abi_boundary_test.exe --quick
   '
-echo 'PASS: exact windows-x64 artifact under Wine'
+echo 'PASS: windows-x64 library under Wine'

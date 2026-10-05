@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Execute the ABI boundary corpus against the exact iOS Simulator dylib.
+# Execute the ABI boundary corpus against the iOS Simulator dylib.
+# The library in build/native_artifacts/<target>/ is a local build of
+# tool/build_native_artifact.sh, or else the released file
+# (tool/prebuilt_artifacts.dart downloads it).
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 [[ "$(uname -s)" == Darwin ]] || { echo 'Requires macOS/Xcode.' >&2; exit 1; }
@@ -9,8 +12,8 @@ case "$(uname -m)" in
   x86_64) arch_name=x86_64; target=ios-x64-iphonesimulator; minimum=13.0 ;;
   *) echo "Unsupported host architecture: $(uname -m)" >&2; exit 1 ;;
 esac
-artifact="$root/native_artifacts/$target/libimage_ffmpeg.dylib"
-[[ -f "$artifact" ]] || { echo "Missing $artifact" >&2; exit 1; }
+artifact="$root/build/native_artifacts/$target/libimage_ffmpeg.dylib"
+[[ -f "$artifact" ]] || (cd "$root" && dart run tool/prebuilt_artifacts.dart "$target")
 
 devices_json="$(xcrun simctl list devices available -j)"
 read -r udid initial_state < <(python3 -c '
@@ -47,4 +50,4 @@ cp "$artifact" "$build/libimage_ffmpeg.dylib"
 codesign -s - --force "$build/abi_boundary_test" \
   "$build/libimage_ffmpeg.dylib" >/dev/null
 xcrun simctl spawn "$udid" "$build/abi_boundary_test" --quick
-echo "PASS: exact $target artifact on simulator $udid"
+echo "PASS: $target library on simulator $udid"

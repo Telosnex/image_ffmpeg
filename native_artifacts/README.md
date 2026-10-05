@@ -1,9 +1,16 @@
-# Pinned production artifacts
+# Native libraries
 
-These are the production code assets selected by `hook/build.dart`. Each is one
-self-contained shim library; Homebrew, CocoaPods, Gradle native dependencies,
-and a system FFmpeg installation are not used at consumer build time or
-runtime.
+Each native target gets one self-contained shim library. Homebrew, CocoaPods,
+Gradle native dependencies, and a system FFmpeg installation are not used at
+consumer build time or runtime.
+
+`prebuilt.json` pins the library of each target by SHA-256 and names the
+GitHub release that holds it. The workflow
+`.github/workflows/native_release.yml` writes it: it runs `hook/build.dart` in
+mode source for every target, uploads the libraries, and records the runner
+and toolchain of each target. The hook uses the release only when the package
+sources match its source key (`dart run native_prebuilt:key`). Check the
+release with `dart run native_prebuilt:check`.
 
 ## Source pins
 
@@ -18,30 +25,27 @@ networking, devices, filters, assembly, runtime CPU detection, GPL and nonfree
 components. libaom is decoder-only for AVIF. zlib supplies PNG compression.
 Both are statically included. Profile 9 enables FFmpeg's native animated-WebP
 demuxer/decoder and its required VP8 decoder from the official `n9.0` release.
-Every build requires the exact peeled release commit above, and the full image
-corpus is run against the resulting bytes.
+Every build requires the exact peeled release commit above.
 
-Artifacts expose only the versioned `image_ffmpeg_*` shim ABI. Upstream symbols
+Libraries expose only the versioned `image_ffmpeg_*` shim ABI. Upstream symbols
 are hidden with an exported-symbol list, ELF version script, or Windows module
 definition. Licenses and notices are under `licenses/`.
 
 ## Matrix
 
-| Target | Minimum | SHA-256 |
+| Target | Minimum | Release build |
 |---|---|---|
-| Android armv7 | API 24 | `c3b5da0272f44ea6c9a549faa6d63c7587e5d448ca88b154f32328633734e6a7` |
-| Android arm64 | API 24 | `3a7f9513ecb779c3583411b0ca1365508f1f6ada72365f9fc1467a27db2673ba` |
-| Android x64 | API 24 | `536827216b70de5275b35aa087b329b60e711d4d51a52508a83b0b7d803382d0` |
-| iOS arm64 device | iOS 13 | `044cbaf42f8c08ad061276dbe8e72de43f4e8d628f0a15399d236cb8abc8dccb` |
-| iOS arm64 simulator | iOS 14 | `1732da73449c700fed8cbbcecb4fc2244f8f33921b65c550233592ed56218da1` |
-| iOS x64 simulator | iOS 13 | `831a5cc8446e1e5a8d676fb5a91ed0738cf6a265a197ab9b78f2f083b2a72dd5` |
-| Linux arm64 | glibc 2.31 | `229977cf601f9714e9c6b4a85e2e3aedc534a745a9d8e0922c8e5a2dafe36743` |
-| Linux x64 | glibc 2.31 | `041f381e57f624177ba59fa3d60f4ff4fdda5ba4dbee81040992b0bb956fb655` |
-| macOS arm64 | macOS 12 | `6302ee12e646fea6e83388c09132bb1b4daad532bf4d3680dca9c453eaf18df2` |
-| macOS x64 | macOS 12 | `534b985a1c26db85d8d66de0cf990d56c15e05de2235a61ee67635120e605151` |
-| Windows arm64 | Windows 10 UCRT | `8e5cbe4216edf925c822112d0509d5115fdd85f1889ccf6913426b1851482f09` |
-| Windows x64 | Windows 10 | `082e4da5f20c4d161f88a4c8c4a152124b55a8447c632b11008cb067713e6e5f` |
-| Browser Wasm | Emscripten 5.0.0 | `1cf5e9ec3c3465f924c42eaa5083ff9cda3168a83ff55951c641db392e368a5c` |
+| Android armv7, arm64, x64 | API 24 | ubuntu-22.04, NDK 28.2.13676358 |
+| iOS arm64 device | iOS 13 | macos-15, Xcode |
+| iOS arm64, x64 simulator | iOS 13 (arm64: 14) | macos-15, Xcode |
+| Linux arm64, x64 | glibc 2.31 | Debian 11 container, GCC 10 |
+| macOS arm64, x64 | macOS 12 | macos-15, Xcode |
+| Windows x64 | Windows 10 | Debian 11 container, MinGW-w64 GCC 10 |
+| Windows arm64 | Windows 10 UCRT | Debian 12 container, llvm-mingw 20260922 |
+
+`prebuilt.json` has the exact toolchain of each target. The Browser Wasm
+module is in `lib/web/`; `manifest.json` pins it and the source commits
+(`dart run tool/verify_artifacts.dart`).
 
 Unsupported target tuples fail in the build hook rather than silently shipping
 an ABI scaffold without FFmpeg.
@@ -56,7 +60,7 @@ tool/build_native_artifact.sh macos-arm64
 tool/build_native_artifact.sh ios-arm64-iphoneos
 tool/build_native_artifact.sh android-arm64
 
-# Reproducible Debian 11 Linux and MinGW Windows builds:
+# The Debian 11 Linux and MinGW Windows builds of the release workflow:
 tool/build_native_linux_docker.sh linux-x64
 tool/build_native_linux_docker.sh linux-arm64
 tool/build_native_windows_docker.sh windows-x64
@@ -65,22 +69,20 @@ tool/build_native_windows_docker.sh windows-x64
 tool/build_native_windows_docker.sh windows-arm64
 ```
 
+The libraries go to `build/native_artifacts/<target>/`. The hook runs the same
+script with paths outside the package.
+
 The Windows arm64 DLL imports only system DLLs: KERNEL32, bcrypt, and the
 Universal C Runtime API sets present on Windows 10 and later. Wine cannot run
 it; verify it on a Windows arm64 host by building
 `tool/support/abi_boundary_test.c` with the same llvm-mingw release against an
 import library generated from `src/exports_windows.def`, running it beside the
-committed DLL, then running `dart test` in the package and `native_test` with a
+DLL, then running `dart test` in the package and `native_test` with a
 `windows_arm64` Dart SDK.
 
 `tool/build_native_artifact.sh` lists every direct target. Fetching verifies
 immutable source commits. Building verifies architecture, exported symbols and
-runtime dependency closure before printing the SHA-256 used by the hook. After
-updating artifacts and `manifest.json`, verify every byte with:
-
-```bash
-dart run tool/verify_artifacts.dart
-```
+runtime dependency closure before printing the SHA-256 of the library.
 
 Because FFmpeg is statically included inside the final shim library, downstream
 binary distributors must review LGPL requirements. The corresponding source

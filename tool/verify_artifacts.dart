@@ -9,23 +9,11 @@ const _expectedSources = {
   'zlib': '51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf',
 };
 
-const _nativeTargets = {
-  'android-arm',
-  'android-arm64',
-  'android-x64',
-  'ios-arm64-iphoneos',
-  'ios-arm64-iphonesimulator',
-  'ios-x64-iphonesimulator',
-  'linux-arm64',
-  'linux-x64',
-  'macos-arm64',
-  'macos-x64',
-  'windows-arm64',
-  'windows-x64',
-};
-
 const _webAssets = {'loader', 'worker', 'module', 'wasm'};
 
+/// Verifies the source pins and the four committed Web assets. The native
+/// libraries are in native_artifacts/prebuilt.json; check them with
+/// `dart run native_prebuilt:check`.
 Future<void> main() async {
   final root = File.fromUri(Platform.script).parent.parent;
   final manifestFile = File('${root.path}/native_artifacts/manifest.json');
@@ -44,20 +32,20 @@ Future<void> main() async {
     throw const FormatException('Unexpected production source pins');
   }
 
-  final native = _stringObjectMap(decoded['artifacts'], 'artifacts');
+  if (decoded.containsKey('artifacts')) {
+    throw const FormatException(
+      'Native libraries belong in native_artifacts/prebuilt.json',
+    );
+  }
   final web = _stringObjectMap(decoded['web'], 'web');
-  _expectExactKeys(native.keys.toSet(), _nativeTargets, 'native target');
   _expectExactKeys(web.keys.toSet(), _webAssets, 'web asset');
-
-  await _verifyEntries(root, native, basePath: 'native_artifacts');
   await _verifyEntries(root, web);
 }
 
 Future<void> _verifyEntries(
   Directory root,
-  Map<String, Object?> entries, {
-  String? basePath,
-}) async {
+  Map<String, Object?> entries,
+) async {
   for (final entry in entries.entries) {
     final item = _stringObjectMap(entry.value, entry.key);
     final relativePath = item['path'];
@@ -67,8 +55,7 @@ Future<void> _verifyEntries(
         !RegExp(r'^[0-9a-f]{64}$').hasMatch(expectedHash)) {
       throw FormatException('Invalid manifest record: ${entry.key}');
     }
-    final prefix = basePath == null ? root.path : '${root.path}/$basePath';
-    final file = File('$prefix/$relativePath');
+    final file = File('${root.path}/$relativePath');
     if (!await file.exists()) {
       throw StateError('Missing artifact: $relativePath');
     }

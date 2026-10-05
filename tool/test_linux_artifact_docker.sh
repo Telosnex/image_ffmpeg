@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Runtime-test the exact committed Linux artifact in a clean matching-arch
-# glibc 2.31 container.
+# Runtime-test the Linux library in a clean matching-arch glibc 2.31
+# container.
+# The library in build/native_artifacts/<target>/ is a local build of
+# tool/build_native_artifact.sh, or else the released file
+# (tool/prebuilt_artifacts.dart downloads it).
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 target="${1:-}"
@@ -16,6 +19,8 @@ case "$target" in
   *) echo "Usage: $0 <linux-x64|linux-arm64>" >&2; exit 64 ;;
 esac
 command -v docker >/dev/null || { echo 'docker is required' >&2; exit 1; }
+[[ -f "$root/build/native_artifacts/$target/libimage_ffmpeg.so" ]] ||
+  (cd "$root" && dart run tool/prebuilt_artifacts.dart "$target")
 
 docker run --rm --platform "$platform" \
   -v "$root:/workspace" -w /workspace "$image" \
@@ -29,9 +34,9 @@ docker run --rm --platform "$platform" \
     rm -rf "$build" && mkdir -p "$build"
     gcc -std=c11 -O2 -Wall -Wextra -Werror -I src \
       tool/support/abi_boundary_test.c \
-      -L "native_artifacts/$target" -limage_ffmpeg \
+      -L "build/native_artifacts/$target" -limage_ffmpeg \
       -pthread -Wl,-rpath,'"'"'$ORIGIN'"'"' -o "$build/abi_boundary_test"
-    cp "native_artifacts/$target/libimage_ffmpeg.so" "$build/"
+    cp "build/native_artifacts/$target/libimage_ffmpeg.so" "$build/"
     "$build/abi_boundary_test"
   '
-echo "PASS: exact $target artifact in clean $platform container"
+echo "PASS: $target library in clean $platform container"

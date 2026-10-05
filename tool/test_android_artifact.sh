@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Execute the ABI boundary corpus against the exact Android artifact on a
+# Execute the ABI boundary corpus against the Android library on a
 # connected device/emulator. Set IMAGE_FFMPEG_ANDROID_AVD to start an AVD.
+# The library in build/native_artifacts/<target>/ is a local build of
+# tool/build_native_artifact.sh, or else the released file
+# (tool/prebuilt_artifacts.dart downloads it).
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}"
@@ -42,7 +45,8 @@ case "$abi" in
 esac
 case "$(uname -s)" in Darwin) host=darwin-x86_64 ;; Linux) host=linux-x86_64 ;; *) exit 1 ;; esac
 cc="$ndk/toolchains/llvm/prebuilt/$host/bin/$compiler"
-artifact="$root/native_artifacts/$target/libimage_ffmpeg.so"
+artifact="$root/build/native_artifacts/$target/libimage_ffmpeg.so"
+[[ -f "$artifact" ]] || (cd "$root" && dart run tool/prebuilt_artifacts.dart "$target")
 build="$root/build/android-device-boundary"
 rm -rf "$build" && mkdir -p "$build"
 "$cc" -std=c11 -O2 -Wall -Wextra -Werror -I"$root/src" \
@@ -52,4 +56,4 @@ remote=/data/local/tmp/image_ffmpeg_boundary
 "$adb" shell "rm -rf $remote && mkdir $remote"
 "$adb" push "$build/abi_boundary_test" "$artifact" "$remote/" >/dev/null
 "$adb" shell "chmod 755 $remote/abi_boundary_test && cd $remote && LD_LIBRARY_PATH=. ./abi_boundary_test --quick"
-echo "PASS: exact $target artifact on Android API $("$adb" shell getprop ro.build.version.sdk | tr -d '\r')"
+echo "PASS: $target library on Android API $("$adb" shell getprop ro.build.version.sdk | tr -d '\r')"

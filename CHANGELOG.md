@@ -1,5 +1,11 @@
 ## 0.0.1
 
+- Download the native libraries from a GitHub release with
+  `package:native_prebuilt`, or build them from source in the hook when the
+  package sources differ from the release (`native_build` user define). The
+  libraries are no longer in git. A GitHub workflow builds all 12 targets
+  with the hook: Linux in the Debian 11 container (glibc 2.31), Windows with
+  MinGW-w64 and llvm-mingw in Debian containers.
 - Add a pinned Windows arm64 artifact cross-built with llvm-mingw UCRT and
   verified with the 6,144-case ABI boundary suite and the package and
   native corpus Dart suites on Windows 11 arm64.

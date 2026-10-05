@@ -7,62 +7,7 @@
     "zlib": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"
   },
   "toolchains": {
-    "apple": "Xcode 26.0.1 (17A400), Apple clang 17.0.0",
-    "android": "NDK 28.2.13676358, clang 19.0.1",
-    "linux": "Debian 11 amd64, GCC 10.2.1",
-    "windows": "Debian 11 amd64, MinGW-w64 GCC 10.2.1",
-    "windows-arm64": "Debian 12 (bookworm-slim abd67ffc platform image), llvm-mingw 20260922 UCRT (LLVM/clang)",
     "web": "Emscripten 5.0.0 a7c5deab, Node 22.16.0"
-  },
-  "artifacts": {
-    "android-arm": {
-      "path": "android-arm/libimage_ffmpeg.so",
-      "sha256": "c3b5da0272f44ea6c9a549faa6d63c7587e5d448ca88b154f32328633734e6a7"
-    },
-    "android-arm64": {
-      "path": "android-arm64/libimage_ffmpeg.so",
-      "sha256": "3a7f9513ecb779c3583411b0ca1365508f1f6ada72365f9fc1467a27db2673ba"
-    },
-    "android-x64": {
-      "path": "android-x64/libimage_ffmpeg.so",
-      "sha256": "536827216b70de5275b35aa087b329b60e711d4d51a52508a83b0b7d803382d0"
-    },
-    "ios-arm64-iphoneos": {
-      "path": "ios-arm64-iphoneos/libimage_ffmpeg.dylib",
-      "sha256": "044cbaf42f8c08ad061276dbe8e72de43f4e8d628f0a15399d236cb8abc8dccb"
-    },
-    "ios-arm64-iphonesimulator": {
-      "path": "ios-arm64-iphonesimulator/libimage_ffmpeg.dylib",
-      "sha256": "1732da73449c700fed8cbbcecb4fc2244f8f33921b65c550233592ed56218da1"
-    },
-    "ios-x64-iphonesimulator": {
-      "path": "ios-x64-iphonesimulator/libimage_ffmpeg.dylib",
-      "sha256": "831a5cc8446e1e5a8d676fb5a91ed0738cf6a265a197ab9b78f2f083b2a72dd5"
-    },
-    "linux-arm64": {
-      "path": "linux-arm64/libimage_ffmpeg.so",
-      "sha256": "229977cf601f9714e9c6b4a85e2e3aedc534a745a9d8e0922c8e5a2dafe36743"
-    },
-    "linux-x64": {
-      "path": "linux-x64/libimage_ffmpeg.so",
-      "sha256": "041f381e57f624177ba59fa3d60f4ff4fdda5ba4dbee81040992b0bb956fb655"
-    },
-    "macos-arm64": {
-      "path": "macos-arm64/libimage_ffmpeg.dylib",
-      "sha256": "6302ee12e646fea6e83388c09132bb1b4daad532bf4d3680dca9c453eaf18df2"
-    },
-    "macos-x64": {
-      "path": "macos-x64/libimage_ffmpeg.dylib",
-      "sha256": "534b985a1c26db85d8d66de0cf990d56c15e05de2235a61ee67635120e605151"
-    },
-    "windows-arm64": {
-      "path": "windows-arm64/image_ffmpeg.dll",
-      "sha256": "8e5cbe4216edf925c822112d0509d5115fdd85f1889ccf6913426b1851482f09"
-    },
-    "windows-x64": {
-      "path": "windows-x64/image_ffmpeg.dll",
-      "sha256": "082e4da5f20c4d161f88a4c8c4a152124b55a8447c632b11008cb067713e6e5f"
-    }
   },
   "web": {
     "loader": {

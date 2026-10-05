@@ -24,13 +24,23 @@ Targets:
 Apple targets require Xcode, Android targets require ANDROID_NDK_HOME (or a
 standard Android SDK installation), and Linux/Windows targets use Linux
 compilers directly or the provided Docker wrappers.
+
+hook/build.dart runs this script for a source build and sets:
+  IMAGE_FFMPEG_THIRD_PARTY   pinned sources (default: third_party)
+  IMAGE_FFMPEG_BUILD_ROOT    intermediate files (default: build/native/<target>-v<profile>)
+  IMAGE_FFMPEG_OUTPUT        the library (default: build/native_artifacts/<target>/<file>)
+  IMAGE_FFMPEG_MACOS_VERSION, IMAGE_FFMPEG_IOS_VERSION, IMAGE_FFMPEG_ANDROID_API
+                             minimum OS (defaults: 12.0, 13.0, 24)
 EOF
   exit 64
 }
 
-ffmpeg_source="$root/third_party/ffmpeg"
-aom_source="$root/third_party/aom"
-zlib_source="$root/third_party/zlib"
+third_party="${IMAGE_FFMPEG_THIRD_PARTY:-$root/third_party}"
+ffmpeg_source="$third_party/ffmpeg"
+aom_source="$third_party/aom"
+zlib_source="$third_party/zlib"
+macos_version="${IMAGE_FFMPEG_MACOS_VERSION:-12.0}"
+ios_version="${IMAGE_FFMPEG_IOS_VERSION:-13.0}"
 
 require_commit() {
   local directory="$1" expected="$2" name="$3"
@@ -83,11 +93,11 @@ case "$target" in
     ar="$(xcrun --sdk "$sdk" -f ar)"
     ranlib="$(xcrun --sdk "$sdk" -f ranlib)"
     strip_tool="$(xcrun --sdk "$sdk" -f strip)"
-    common_cflags+=" -arch $artifact_arch -mmacosx-version-min=12.0 -isysroot $sdk_path"
-    common_ldflags="-arch $artifact_arch -mmacosx-version-min=12.0 -isysroot $sdk_path"
+    common_cflags+=" -arch $artifact_arch -mmacosx-version-min=$macos_version -isysroot $sdk_path"
+    common_ldflags="-arch $artifact_arch -mmacosx-version-min=$macos_version -isysroot $sdk_path"
     cmake_platform_args=(
       -DCMAKE_OSX_ARCHITECTURES="$artifact_arch"
-      -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
+      -DCMAKE_OSX_DEPLOYMENT_TARGET="$macos_version"
       -DCMAKE_OSX_SYSROOT="$sdk_path"
     )
     configure_platform_args=(--target-os=darwin --arch="$ffmpeg_arch")
@@ -113,16 +123,16 @@ case "$target" in
     ranlib="$(xcrun --sdk "$sdk" -f ranlib)"
     strip_tool="$(xcrun --sdk "$sdk" -f strip)"
     if [[ "$sdk" == iphoneos ]]; then
-      minimum_flag=-miphoneos-version-min=13.0
+      minimum_flag=-miphoneos-version-min=$ios_version
     else
-      minimum_flag=-mios-simulator-version-min=13.0
+      minimum_flag=-mios-simulator-version-min=$ios_version
     fi
     common_cflags+=" -arch $artifact_arch $minimum_flag -isysroot $sdk_path"
     common_ldflags="-arch $artifact_arch $minimum_flag -isysroot $sdk_path"
     cmake_platform_args=(
       -DCMAKE_SYSTEM_NAME=iOS
       -DCMAKE_OSX_ARCHITECTURES="$artifact_arch"
-      -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+      -DCMAKE_OSX_DEPLOYMENT_TARGET="$ios_version"
       -DCMAKE_OSX_SYSROOT="$sdk_path"
       -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY
     )
@@ -280,15 +290,15 @@ for tool in "$cc" "$cxx" "$ar" "$ranlib" "$strip_tool"; do
   command -v "$tool" >/dev/null || { echo "Required tool not found: $tool" >&2; exit 1; }
 done
 
-build_root="$root/build/native/$target-v$profile_version"
+build_root="${IMAGE_FFMPEG_BUILD_ROOT:-$root/build/native/$target-v$profile_version}"
 zlib_build="$build_root/zlib"
 zlib_prefix="$zlib_build/install"
 aom_build="$build_root/aom"
 aom_prefix="$aom_build/install"
 ffmpeg_build="$build_root/ffmpeg"
 ffmpeg_prefix="$ffmpeg_build/install"
-artifact_directory="$root/native_artifacts/$target"
-artifact="$artifact_directory/$output_name"
+artifact="${IMAGE_FFMPEG_OUTPUT:-$root/build/native_artifacts/$target/$output_name}"
+artifact_directory="$(dirname "$artifact")"
 jobs="${IMAGE_FFMPEG_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.logicalcpu 2>/dev/null || echo 4)}"
 
 if [[ ! -f "$zlib_build/.image_ffmpeg_complete" ]]; then

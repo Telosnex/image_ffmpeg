@@ -1,0 +1,33 @@
+# Files that the native build does not read (fllama ADR 005 D3). The source
+# build reads hook/, src/, pubspec.yaml and the native build scripts in tool/.
+analysis_options.yaml
+benchmark/
+codemagic.yaml
+dart_test.yaml
+doc/
+ffigen.yaml
+native_artifacts/README.md
+native_artifacts/licenses/
+native_artifacts/manifest.json
+native_test/
+tool/build_aom_web.sh
+tool/build_ffmpeg_web.sh
+tool/build_web.sh
+tool/fetch_aom.sh
+tool/fetch_ffmpeg.sh
+tool/prebuilt_artifacts.dart
+tool/render_synthetic_operation.dart
+tool/safari_test_launcher.sh
+tool/support/
+tool/test_all.sh
+tool/test_android_artifact.sh
+tool/test_ios_simulator_artifact.sh
+tool/test_linux_artifact_docker.sh
+tool/test_macos_artifacts.sh
+tool/test_native_sanitizers.sh
+tool/test_windows_artifact_wine.sh
+tool/update_browser_corpus_manifest.dart
+tool/update_image_corpus.sh
+tool/update_image_corpus_references.sh
+tool/verify_artifacts.dart
+tool/verify_native_artifacts.dart
