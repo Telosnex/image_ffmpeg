@@ -198,8 +198,8 @@ packages:
     dependency: transitive
     description:
       path: "."
-      ref: c2d414c6a3dd34ad57be0952fe6eb291ccf945f7
-      resolved-ref: c2d414c6a3dd34ad57be0952fe6eb291ccf945f7
+      ref: ced023d6b94f2a886a765ef164fe552333ab4252
+      resolved-ref: ced023d6b94f2a886a765ef164fe552333ab4252
       url: "https://github.com/Telosnex/native_prebuilt.git"
     source: git
     version: "0.1.0"
