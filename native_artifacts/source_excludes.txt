@@ -7,7 +7,6 @@ dart_test.yaml
 doc/
 ffigen.yaml
 native_artifacts/README.md
-native_artifacts/licenses/
 native_artifacts/manifest.json
 native_test/
 tool/build_aom_web.sh

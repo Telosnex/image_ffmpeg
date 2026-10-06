@@ -29,7 +29,8 @@ Every build requires the exact peeled release commit above.
 
 Libraries expose only the versioned `image_ffmpeg_*` shim ABI. Upstream symbols
 are hidden with an exported-symbol list, ELF version script, or Windows module
-definition. Licenses and notices are under `licenses/`.
+definition. Licenses and notices are in the package `LICENSE`, in the
+Flutter multi-license format.
 
 ## Matrix
 
