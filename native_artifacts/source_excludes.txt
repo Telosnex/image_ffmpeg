@@ -1,5 +1,6 @@
-# Files that the native build does not read (fllama ADR 005 D3). The source
-# build reads hook/, src/, pubspec.yaml and the native build scripts in tool/.
+# Files that the native build does not read (native_prebuilt ADR 001 D3). The
+# source build reads hook/, src/, pubspec.yaml and the native build scripts in
+# tool/.
 analysis_options.yaml
 benchmark/
 codemagic.yaml

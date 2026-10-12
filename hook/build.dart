@@ -1,12 +1,12 @@
 /// Bundles the image_ffmpeg shim library as a Dart code asset.
 ///
-/// With package:native_prebuilt (fllama ADR 005), the hook downloads the
-/// library from the GitHub release in native_artifacts/prebuilt.json when the
-/// package sources match it (user define `native_build`: auto, download or
-/// source). Otherwise it runs tool/build_native_artifact.sh, which needs
-/// CMake, git and the target compiler. Apple targets build on macOS, Android
-/// targets on macOS or Linux, and Linux and Windows targets on Linux (Windows
-/// with MinGW).
+/// With package:native_prebuilt (native_prebuilt ADR 001), the hook downloads
+/// the library from the GitHub release in native_artifacts/prebuilt.json when
+/// the package sources match it (user define `native_build`: auto, download or
+/// source). Otherwise it runs tool/build_native_artifact.sh, which needs CMake,
+/// git and the target compiler. Apple targets build on macOS, Android targets
+/// on macOS or Linux, and Linux and Windows targets on Linux (Windows with
+/// MinGW).
 library;
 
 import 'dart:convert';
