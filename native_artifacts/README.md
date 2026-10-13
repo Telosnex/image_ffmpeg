@@ -44,9 +44,11 @@ Flutter multi-license format.
 | Windows x64 | Windows 10 | Debian 11 container, MinGW-w64 GCC 10 |
 | Windows arm64 | Windows 10 UCRT | Debian 12 container, llvm-mingw 20260922 |
 
-`prebuilt.json` has the exact toolchain of each target. The Browser Wasm
-module is in `lib/web/`; `manifest.json` pins it and the source commits
-(`dart run tool/verify_artifacts.dart`).
+`prebuilt.json` has the exact toolchain of each target. `web.json` pins the
+browser runtime of the same release: the Wasm module that the web job builds
+with `tool/build_web.dart` in the pinned `emscripten/emsdk:5.0.0` image, and
+the hand-written worker and loader in `lib/web/` (native_prebuilt ADR 002).
+`manifest.json` pins the source commits (`dart run tool/verify_artifacts.dart`).
 
 Unsupported target tuples fail in the build hook rather than silently shipping
 an ABI scaffold without FFmpeg.

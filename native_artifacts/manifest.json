@@ -5,26 +5,5 @@
     "ffmpeg": "d32b387f2b0a484599d4587d651891f0c63c4238",
     "libaom": "10aece4157eb79315da205f39e19bf6ab3ee30d0",
     "zlib": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"
-  },
-  "toolchains": {
-    "web": "Emscripten 5.0.0 a7c5deab, Node 22.16.0"
-  },
-  "web": {
-    "loader": {
-      "path": "lib/web/image_ffmpeg_loader.mjs",
-      "sha256": "c92212041a0e995c4eca90e55b32bdd9d70380a27f1c6fcbd922f2909a905116"
-    },
-    "worker": {
-      "path": "lib/web/image_ffmpeg_worker.mjs",
-      "sha256": "2a18209091eece33de82199950a250080dbc2cb5993b8ecf06570ee09ec698d6"
-    },
-    "module": {
-      "path": "lib/web/image_ffmpeg_module.mjs",
-      "sha256": "6f1281c8a1e6121c37598d064ab870bc659d666519161d1a6cf4462d7dbf5035"
-    },
-    "wasm": {
-      "path": "lib/web/image_ffmpeg_module.wasm",
-      "sha256": "1cf5e9ec3c3465f924c42eaa5083ff9cda3168a83ff55951c641db392e368a5c"
-    }
   }
 }

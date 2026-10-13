@@ -7,6 +7,9 @@
 /// git and the target compiler. Apple targets build on macOS, Android targets
 /// on macOS or Linux, and Linux and Windows targets on Linux (Windows with
 /// MinGW).
+///
+/// For a web build, the hook installs the web runtime files of
+/// native_artifacts/web.json into the app (native_prebuilt ADR 002).
 library;
 
 import 'dart:convert';
@@ -39,7 +42,14 @@ const _targets = {
 
 void main(List<String> args) async {
   await build(args, (input, output) async {
-    if (!input.config.buildCodeAssets) return;
+    if (!input.config.buildCodeAssets) {
+      // A web build: install the web runtime files (native_prebuilt ADR 002).
+      return NativePrebuilt(
+        input: input,
+        output: output,
+        log: _log,
+      ).installWeb();
+    }
 
     final stopwatch = Stopwatch()..start();
     final target = TargetName.of(input.config.code);

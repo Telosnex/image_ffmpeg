@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import '../models.dart';
 import '../web_config.dart';
+import '../web_runtime.g.dart';
 import 'backend.dart';
 
 /// Must match `IMAGE_FFMPEG_ABI_VERSION` in `src/image_ffmpeg.h` and
@@ -14,13 +15,22 @@ const _abiVersion = 5;
 /// Must match `IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888` in `src/image_ffmpeg.h`.
 const _pixelFormatRgba8888 = 1;
 
-/// Flutter web bundles the pubspec-declared package assets at this app-origin
-/// path; it is resolved against the document base URI so `<base href>` works.
-// Version the default entry point by ABI. The Worker propagates this query to
-// its loader, generated module, and Wasm binary, preventing a browser/CDN from
-// combining assets from incompatible package revisions.
-const _flutterAssetWorkerUrl =
-    'assets/packages/image_ffmpeg/web/image_ffmpeg_worker.mjs?v=$_abiVersion';
+/// Where the image_ffmpeg build hook installs the worker in a Flutter web
+/// app (native_prebuilt ADR 002 D1, D8).
+const defaultWorkerUrl = 'native_prebuilt/image_ffmpeg/image_ffmpeg_worker.mjs';
+
+/// [workerUri] resolved against [baseUri], with the query
+/// `v=<webRuntimeVersion>` unless it has a `v` query already (ADR 002 D7).
+/// The Worker passes the query on to every file that it loads.
+Uri resolveWorkerUrl(String baseUri, Uri? workerUri) {
+  final resolved = Uri.parse(
+    baseUri,
+  ).resolveUri(workerUri ?? Uri.parse(defaultWorkerUrl));
+  if (resolved.queryParameters.containsKey('v')) return resolved;
+  return resolved.replace(
+    queryParameters: {...resolved.queryParameters, 'v': webRuntimeVersion},
+  );
+}
 
 /// Takes the API's call-time snapshot in JavaScript memory.
 ///
@@ -34,11 +44,10 @@ Future<FfmpegBackend> loadBackend() async {
   if (workerCount < 1 || workerCount > 4) {
     throw RangeError.range(workerCount, 1, 4, 'ImageFfmpegWeb.workerCount');
   }
-  final configuredUri =
-      ImageFfmpegWeb.workerUri ?? Uri.parse(_flutterAssetWorkerUrl);
-  final workerUrl = Uri.parse(
+  final workerUrl = resolveWorkerUrl(
     _documentBaseUri,
-  ).resolveUri(configuredUri).toString();
+    ImageFfmpegWeb.workerUri,
+  ).toString();
   final workers = <_WebWorkerBackend>[];
   try {
     for (var index = 0; index < workerCount; index++) {

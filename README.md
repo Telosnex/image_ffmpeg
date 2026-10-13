@@ -224,12 +224,15 @@ checks, and reproduction commands are in
   same C ABI.
 - `lib/web/image_ffmpeg_worker.mjs`: request/response Worker protocol with
   transferable input and output buffers.
-- `lib/web/image_ffmpeg_module.{mjs,wasm}`: committed browser runtime bundled as
-  Flutter package assets.
-- `tool/build_web.sh`: builds the current C shim to Wasm.
-- `tool/verify_artifacts.dart`: verifies exact source/profile pins and all four
-  Web assets. `dart run native_prebuilt:check` verifies the released native
-  libraries.
+- `lib/web/image_ffmpeg_module.{mjs,wasm}`: generated browser runtime. The
+  release workflow builds it, `native_artifacts/web.json` pins it, and in a
+  Flutter web build the package hook installs the four web files in
+  `web/native_prebuilt/image_ffmpeg/` of the app (native_prebuilt ADR 002).
+- `tool/build_web.dart`: builds libaom, FFmpeg, and the C shim to Wasm with
+  Emscripten 5.0.0.
+- `tool/verify_artifacts.dart`: verifies exact source/profile pins.
+  `dart run native_prebuilt:check` verifies the released native libraries and
+  web files.
 - `.github/workflows/native_release.yml`: builds all 12 native targets with the
   hook and publishes them as a GitHub release.
 - `tool/support/abi_boundary_test.c`: positive ownership checks and 6,144
@@ -299,13 +302,14 @@ Build the reduced single-threaded FFmpeg WebAssembly libraries and module after
 activating Emscripten:
 
 ```bash
-source /Users/jpo/dev/emsdk/emsdk_env.sh
-./tool/fetch_aom.sh
-./tool/build_aom_web.sh
-./tool/build_ffmpeg_web.sh
-./tool/build_web.sh
+dart run tool/build_web.dart --out /tmp/image_ffmpeg_web
+dart run native_prebuilt:web install-dev --from /tmp/image_ffmpeg_web
 node benchmark/benchmark_wallpaper_wasm.mjs [optional/input.jpg]
 ```
+
+Without `--from`, `install-dev` downloads the released files of
+`native_artifacts/web.json`. After a change to `lib/web/*.mjs`, run
+`dart run native_prebuilt:web stamp`.
 
 For a real browser run, link or copy the fixture to
 `benchmark/wallpaper.jpg`, serve the package root, and open

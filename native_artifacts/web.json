@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "webVersion": "072deae428db2c69",
+  "files": [
+    {
+      "name": "image_ffmpeg_loader.mjs",
+      "sha256": "c92212041a0e995c4eca90e55b32bdd9d70380a27f1c6fcbd922f2909a905116",
+      "bytes": 7946,
+      "source": "lib/web/image_ffmpeg_loader.mjs"
+    },
+    {
+      "name": "image_ffmpeg_worker.mjs",
+      "sha256": "dfb6e62d5cb65665916a3bb882e55cb5305768adbb2acf169bd97d8f6ec1375c",
+      "bytes": 4027,
+      "source": "lib/web/image_ffmpeg_worker.mjs"
+    }
+  ]
+}

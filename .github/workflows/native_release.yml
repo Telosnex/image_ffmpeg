@@ -1,10 +1,15 @@
-# Builds the native library for every target and publishes the files as a
-# GitHub release (native_prebuilt ADR 001 D5, D6, D8). Start it with
+# Builds the native library for every target and the web runtime files, and
+# publishes them as one GitHub release (native_prebuilt ADR 001 D5, D6, D8;
+# ADR 002 D3, D10). Start it with
 #   git push -f origin HEAD:native-release       (release)
 #   git push -f origin HEAD:native-release-dry   (build only, no upload)
 # or with workflow_dispatch. On success it pushes the branch
-# native-manifest/<tag> with native_artifacts/prebuilt.json. Merge that
-# branch to use the release.
+# native-manifest/<tag> with native_artifacts/prebuilt.json, web.json and
+# lib/src/web_runtime.g.dart. Merge that branch to use the release.
+#
+# The web files build with tool/build_web.dart (libaom, FFmpeg, the shim) in
+# the pinned emscripten/emsdk:5.0.0 image, and the browser tests run on them
+# before the release.
 #
 # Linux and Windows libraries build in pinned Debian containers, as before
 # (tool/build_native_*_docker.sh use the same images): Linux for glibc 2.31,
@@ -35,6 +40,7 @@ defaults:
 
 env:
   DART_VERSION: 3.13.1
+  EMSDK_IMAGE: emscripten/emsdk@sha256:67df07bc59f86685818fa801d340b54e576fe4276cfd3bcfc4da61d564217737
   NDK_VERSION: 28.2.13676358
   # Flutter passes iOS 13 to build hooks (flutter_tools targetIOSVersion).
   IOS_VERSION: 13
@@ -228,8 +234,84 @@ jobs:
       - *clean
       - *upload
 
+  web:
+    name: web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      # emscripten/emsdk:5.0.0. env is not available in container.image.
+      image: emscripten/emsdk@sha256:67df07bc59f86685818fa801d340b54e576fe4276cfd3bcfc4da61d564217737
+    steps:
+      # setup-dart unpacks a zip.
+      - name: Install unzip
+        run: |
+          command -v unzip > /dev/null || {
+            apt-get update -qq
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends unzip > /dev/null
+          }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+        with:
+          sdk: ${{ env.DART_VERSION }}
+      - *pub_get
+      - *paths
+      - *clean
+      - name: Source key
+        run: |
+          mkdir -p "$OUT/key"
+          dart run native_prebuilt:key --list > "$OUT/key/web.txt"
+          tail -1 "$OUT/key/web.txt"
+      - name: Build
+        run: |
+          start=$SECONDS
+          dart run tool/build_web.dart --out "$OUT/web" --work "$RUNNER_TEMP/web-build"
+          echo "Web build: $((SECONDS - start)) s"
+          mkdir -p "$OUT/web-meta"
+          emcc --version | sed -n 1p | sed 's/^emcc (Emscripten gcc\/clang-like replacement + linker emulating GNU ld) /Emscripten /' > "$OUT/web-meta/toolchain.txt"
+          echo "Toolchain: $(cat "$OUT/web-meta/toolchain.txt")"
+      - *clean
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-web
+          path: ${{ runner.temp }}/native/
+          if-no-files-found: error
+          retention-days: 90
+
+  # The package browser tests on the files of the web job (ADR 002 D10, D13).
+  web-test:
+    name: web tests
+    needs: web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+        with:
+          sdk: ${{ env.DART_VERSION }}
+      - *pub_get
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: native-web
+          path: ${{ runner.temp }}/web-artifact
+      - name: Install the web files into lib/web
+        run: dart run native_prebuilt:web install-dev --from "$RUNNER_TEMP/web-artifact/web"
+      # The hook builds the host library from source for the test runner:
+      # the release for this source key does not exist yet.
+      - name: Chrome dart2js
+        run: dart test -p chrome --compiler dart2js -j 1 -r expanded test/image_ffmpeg_web_*_test.dart test/image_ffmpeg_web_test.dart test/image_ffmpeg_synthetic_operation_test.dart
+      - name: Chrome dart2wasm
+        run: dart test -p chrome --compiler dart2wasm -j 1 -r expanded test/image_ffmpeg_web_*_test.dart test/image_ffmpeg_web_test.dart test/image_ffmpeg_synthetic_operation_test.dart
+
   release:
-    needs: [build, build-in-container]
+    needs: [build, build-in-container, web, web-test]
     # Only the owner publishes, from this repository.
     if: >-
       github.repository == 'Telosnex/image_ffmpeg' &&
@@ -274,8 +356,12 @@ jobs:
         run: |
           args=(--staging "$RUNNER_TEMP/staging")
           if [[ "$DRY_RUN" == true ]]; then args+=(--dry-run); fi
-          dart run native_prebuilt:release "${args[@]}" "$ARTIFACTS/out"
-          cat native_artifacts/prebuilt.json
+          dart run native_prebuilt:release "${args[@]}" \
+            --web "$ARTIFACTS/web" \
+            --web-runner "ubuntu-24.04, $EMSDK_IMAGE" \
+            --web-toolchain "$(cat "$ARTIFACTS/web-meta/toolchain.txt")" \
+            "$ARTIFACTS/out"
+          cat native_artifacts/prebuilt.json native_artifacts/web.json
 
       - name: Push the manifest branch
         if: env.DRY_RUN != 'true'
@@ -285,7 +371,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$branch"
-          git add native_artifacts/prebuilt.json
+          git add native_artifacts/prebuilt.json native_artifacts/web.json lib/src/web_runtime.g.dart
           git commit -m "native: prebuilt files of release $tag"
           git push origin "$branch"
           {
@@ -297,4 +383,6 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: prebuilt-manifest
-          path: native_artifacts/prebuilt.json
+          path: |
+            native_artifacts/prebuilt.json
+            native_artifacts/web.json

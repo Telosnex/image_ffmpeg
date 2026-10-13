@@ -1,6 +1,8 @@
 # Files that the native build does not read (native_prebuilt ADR 001 D3). The
 # source build reads hook/, src/, pubspec.yaml and the native build scripts in
-# tool/.
+# tool/. The web build (tool/build_web.dart, the libaom and FFmpeg fetch
+# scripts, tool/pkg_config_aom.sh) is a source input too (native_prebuilt
+# ADR 002 D5).
 analysis_options.yaml
 benchmark/
 codemagic.yaml
@@ -10,11 +12,6 @@ ffigen.yaml
 native_artifacts/README.md
 native_artifacts/manifest.json
 native_test/
-tool/build_aom_web.sh
-tool/build_ffmpeg_web.sh
-tool/build_web.sh
-tool/fetch_aom.sh
-tool/fetch_ffmpeg.sh
 tool/prebuilt_artifacts.dart
 tool/render_synthetic_operation.dart
 tool/safari_test_launcher.sh
