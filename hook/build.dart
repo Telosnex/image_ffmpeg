@@ -63,7 +63,7 @@ void main(List<String> args) async {
       input: input,
       output: output,
       log: _log,
-    ).run((_) => _buildFromSource(input, output, target));
+    ).run((source) => _buildFromSource(input, output, target, source));
     _log('Hook completed in ${_formatDuration(stopwatch.elapsed)}');
   });
 }
@@ -74,6 +74,7 @@ Future<void> _buildFromSource(
   BuildInput input,
   BuildOutputBuilder output,
   TargetName target,
+  SourceBuild source,
 ) async {
   final hostProblem = _hostProblem(target);
   if (hostProblem != null) throw UnsupportedError('image_ffmpeg: $hostProblem');
@@ -81,8 +82,13 @@ Future<void> _buildFromSource(
   final code = input.config.code;
   final packageRoot = input.packageRoot;
   final shared = input.outputDirectoryShared;
+  // FFmpeg, libaom and zlib: the pinned sources of native_artifacts/
+  // sources.json, fetched once into the native_prebuilt cache, or placed
+  // there by a packager for a build without network.
   final environment = {
-    'IMAGE_FFMPEG_THIRD_PARTY': shared.resolve('sources').toFilePath(),
+    'IMAGE_FFMPEG_FFMPEG_SOURCE': (await source.pinnedSource('ffmpeg')).path,
+    'IMAGE_FFMPEG_AOM_SOURCE': (await source.pinnedSource('aom')).path,
+    'IMAGE_FFMPEG_ZLIB_SOURCE': (await source.pinnedSource('zlib')).path,
     'IMAGE_FFMPEG_BUILD_JOBS': '${Platform.numberOfProcessors}',
     if (target.os == OS.macOS)
       'IMAGE_FFMPEG_MACOS_VERSION': '${code.macOS.targetVersion}.0',
@@ -94,14 +100,7 @@ Future<void> _buildFromSource(
     },
   };
 
-  // The pinned sources are shared by every target of this app. Two targets
-  // can build at once, so a lock guards the fetch and each build directory.
-  await _withLock(File.fromUri(shared.resolve('sources.lock')), () async {
-    await _run('Fetching the pinned sources', packageRoot, [
-      'tool/fetch_native_sources.sh',
-    ], environment);
-  });
-
+  // Two targets can build at once, so a lock guards each build directory.
   // The build directory keeps the static FFmpeg, libaom and zlib libraries,
   // so a change to src/ only relinks the shim. Its name depends on the build
   // scripts, the settings and the compiler version.
@@ -109,7 +108,7 @@ Future<void> _buildFromSource(
     for (final path in [
       'tool/build_native_artifact.sh',
       'tool/pkg_config_aom.sh',
-      'tool/fetch_native_sources.sh',
+      'native_artifacts/sources.json',
     ])
       await File.fromUri(packageRoot.resolve(path)).readAsString(),
   ];
@@ -251,7 +250,7 @@ Future<void> _run(
   final stopwatch = Stopwatch()..start();
   // bash runs the script, so the file mode of a checkout does not matter.
   final process = await Process.start(
-    'bash',
+    bashExecutable(),
     bashArguments,
     workingDirectory: packageRoot.toFilePath(),
     environment: environment,

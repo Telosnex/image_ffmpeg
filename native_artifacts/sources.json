@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "name": "ffmpeg",
+      "git": "https://github.com/FFmpeg/FFmpeg.git",
+      "commit": "d32b387f2b0a484599d4587d651891f0c63c4238"
+    },
+    {
+      "name": "aom",
+      "git": "https://aomedia.googlesource.com/aom",
+      "commit": "10aece4157eb79315da205f39e19bf6ab3ee30d0"
+    },
+    {
+      "name": "zlib",
+      "git": "https://github.com/madler/zlib.git",
+      "commit": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"
+    }
+  ]
+}

@@ -26,7 +26,10 @@ standard Android SDK installation), and Linux/Windows targets use Linux
 compilers directly or the provided Docker wrappers.
 
 hook/build.dart runs this script for a source build and sets:
-  IMAGE_FFMPEG_THIRD_PARTY   pinned sources (default: third_party)
+  IMAGE_FFMPEG_FFMPEG_SOURCE, IMAGE_FFMPEG_AOM_SOURCE, IMAGE_FFMPEG_ZLIB_SOURCE
+                             the pinned checkouts of native_artifacts/sources.json
+                             (default: ffmpeg, aom and zlib in
+                             IMAGE_FFMPEG_THIRD_PARTY, default third_party)
   IMAGE_FFMPEG_BUILD_ROOT    intermediate files (default: build/native/<target>-v<profile>)
   IMAGE_FFMPEG_OUTPUT        the library (default: build/native_artifacts/<target>/<file>)
   IMAGE_FFMPEG_MACOS_VERSION, IMAGE_FFMPEG_IOS_VERSION, IMAGE_FFMPEG_ANDROID_API
@@ -36,9 +39,9 @@ EOF
 }
 
 third_party="${IMAGE_FFMPEG_THIRD_PARTY:-$root/third_party}"
-ffmpeg_source="$third_party/ffmpeg"
-aom_source="$third_party/aom"
-zlib_source="$third_party/zlib"
+ffmpeg_source="${IMAGE_FFMPEG_FFMPEG_SOURCE:-$third_party/ffmpeg}"
+aom_source="${IMAGE_FFMPEG_AOM_SOURCE:-$third_party/aom}"
+zlib_source="${IMAGE_FFMPEG_ZLIB_SOURCE:-$third_party/zlib}"
 macos_version="${IMAGE_FFMPEG_MACOS_VERSION:-12.0}"
 ios_version="${IMAGE_FFMPEG_IOS_VERSION:-13.0}"
 
