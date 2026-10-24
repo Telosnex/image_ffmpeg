@@ -187,7 +187,7 @@ rather than structured-cloned.
 | Windows | arm64, x64 | Windows 10 |
 
 The build hook uses
-[native_prebuilt](https://github.com/Telosnex/native_prebuilt). If the package
+[kiln](https://github.com/Telosnex/kiln). If the package
 sources match `native_artifacts/prebuilt.json`, it downloads the library of
 the target from the GitHub release named there, checks its SHA-256, and emits
 it as a bundled Dart code asset. Otherwise it builds the library from source
@@ -227,13 +227,13 @@ checks, and reproduction commands are in
 - `lib/web/image_ffmpeg_module.{mjs,wasm}`: generated browser runtime. The
   release workflow builds it, `native_artifacts/web.json` pins it, and in a
   Flutter web build the package hook installs the four web files in
-  `web/native_prebuilt/image_ffmpeg/` of the app (native_prebuilt ADR 002).
-- `tool/build_web.dart`: builds libaom, FFmpeg, and the C shim to Wasm with
+  `web/kiln/image_ffmpeg/` of the app (kiln ADR 002).
+- `tool/kiln/build_web.dart`: builds libaom, FFmpeg, and the C shim to Wasm with
   Emscripten 5.0.0.
 - `tool/verify_artifacts.dart`: verifies exact source/profile pins.
-  `dart run native_prebuilt:check` verifies the released native libraries and
+  `dart run kiln:check` verifies the released native libraries and
   web files.
-- `.github/workflows/native_release.yml`: builds all 12 native targets with the
+- `.github/workflows/kiln_release.yml`: builds all 12 native targets with the
   hook and publishes them as a GitHub release.
 - `tool/support/abi_boundary_test.c`: positive ownership checks and 6,144
   deterministic malformed descriptor/option/encoded-input cases.
@@ -302,14 +302,14 @@ Build the reduced single-threaded FFmpeg WebAssembly libraries and module after
 activating Emscripten:
 
 ```bash
-dart run tool/build_web.dart --out /tmp/image_ffmpeg_web
-dart run native_prebuilt:web install-dev --from /tmp/image_ffmpeg_web
+dart run tool/kiln/build_web.dart --out /tmp/image_ffmpeg_web
+dart run kiln:web install-dev --from /tmp/image_ffmpeg_web
 node benchmark/benchmark_wallpaper_wasm.mjs [optional/input.jpg]
 ```
 
 Without `--from`, `install-dev` downloads the released files of
 `native_artifacts/web.json`. After a change to `lib/web/*.mjs`, run
-`dart run native_prebuilt:web stamp`.
+`dart run kiln:web stamp`.
 
 For a real browser run, link or copy the fixture to
 `benchmark/wallpaper.jpg`, serve the package root, and open
@@ -329,8 +329,8 @@ Build native libraries from immutable source commits into
 ```
 
 See `tool/build_native_artifact.sh` for the complete Apple and Android target
-matrix. To publish a release, push to branch `native-release` (or
-`native-release-dry` to build only), then merge the `native-manifest/<tag>`
+matrix. To publish a release, push to branch `kiln-release` (or
+`kiln-release-dry` to build only), then merge the `kiln-manifest/<tag>`
 branch that the workflow pushes.
 
 ## Next milestones

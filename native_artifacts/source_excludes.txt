@@ -1,11 +1,10 @@
-# Files that the native build does not read (native_prebuilt ADR 001 D3). The
+# Files that the native build does not read (kiln ADR 001 D3). The
 # source build reads hook/, src/, pubspec.yaml and the native build scripts in
-# tool/. The web build (tool/build_web.dart, the libaom and FFmpeg fetch
-# scripts, tool/pkg_config_aom.sh) is a source input too (native_prebuilt
+# tool/. The web build (tool/kiln/build_web.dart, the libaom and FFmpeg fetch
+# scripts, tool/pkg_config_aom.sh) is a source input too (kiln
 # ADR 002 D5).
 analysis_options.yaml
 benchmark/
-codemagic.yaml
 dart_test.yaml
 doc/
 ffigen.yaml
@@ -28,3 +27,5 @@ tool/update_image_corpus.sh
 tool/update_image_corpus_references.sh
 tool/verify_artifacts.dart
 tool/verify_native_artifacts.dart
+tool/kiln/test_build.dart
+tool/kiln/test_web.dart

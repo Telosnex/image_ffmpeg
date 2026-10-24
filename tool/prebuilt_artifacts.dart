@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:native_prebuilt/native_prebuilt.dart';
+import 'package:kiln/kiln.dart';
 
 /// Downloads the released libraries of the given targets (default: all) into
 /// `build/native_artifacts/<target>/`, after a check of their SHA-256. The

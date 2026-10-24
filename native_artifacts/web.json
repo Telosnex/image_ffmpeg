@@ -4,7 +4,7 @@
   "release": "https://github.com/Telosnex/image_ffmpeg/releases/tag/native-b65f368fddb61711",
   "runner": "ubuntu-24.04, emscripten/emsdk@sha256:67df07bc59f86685818fa801d340b54e576fe4276cfd3bcfc4da61d564217737",
   "toolchain": "Emscripten 5.0.0 (a7c5deabd7c88ba1c38ebe988112256775f944c6)",
-  "webVersion": "601c7ca69639ce0e",
+  "webVersion": "0aead06f07dfbb83",
   "files": [
     {
       "name": "image_ffmpeg_loader.mjs",
@@ -30,8 +30,8 @@
     },
     {
       "name": "image_ffmpeg_worker.mjs",
-      "sha256": "dfb6e62d5cb65665916a3bb882e55cb5305768adbb2acf169bd97d8f6ec1375c",
-      "bytes": 4027,
+      "sha256": "629785b8b09b9ccb90c41372209972409fbb92be4bc2e71d2dab90ef46b60f77",
+      "bytes": 4016,
       "source": "lib/web/image_ffmpeg_worker.mjs"
     }
   ]

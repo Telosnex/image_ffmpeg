@@ -1,6 +1,6 @@
 /// Bundles the image_ffmpeg shim library as a Dart code asset.
 ///
-/// With package:native_prebuilt (native_prebuilt ADR 001), the hook downloads
+/// With package:kiln (kiln ADR 001), the hook downloads
 /// the library from the GitHub release in native_artifacts/prebuilt.json when
 /// the package sources match it (user define `native_build`: auto, download or
 /// source). Otherwise it runs tool/build_native_artifact.sh, which needs CMake,
@@ -9,7 +9,7 @@
 /// MinGW).
 ///
 /// For a web build, the hook installs the web runtime files of
-/// native_artifacts/web.json into the app (native_prebuilt ADR 002).
+/// native_artifacts/web.json into the app (kiln ADR 002).
 library;
 
 import 'dart:convert';
@@ -18,7 +18,7 @@ import 'dart:io';
 import 'package:code_assets/code_assets.dart';
 import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
-import 'package:native_prebuilt/native_prebuilt.dart';
+import 'package:kiln/kiln.dart';
 
 const _assetName = 'image_ffmpeg_bindings_generated.dart';
 
@@ -43,12 +43,8 @@ const _targets = {
 void main(List<String> args) async {
   await build(args, (input, output) async {
     if (!input.config.buildCodeAssets) {
-      // A web build: install the web runtime files (native_prebuilt ADR 002).
-      return NativePrebuilt(
-        input: input,
-        output: output,
-        log: _log,
-      ).installWeb();
+      // A web build: install the web runtime files (kiln ADR 002).
+      return Kiln(input: input, output: output, log: _log).installWeb();
     }
 
     final stopwatch = Stopwatch()..start();
@@ -59,7 +55,7 @@ void main(List<String> args) async {
         '${_targets.join(', ')}.',
       );
     }
-    await NativePrebuilt(
+    await Kiln(
       input: input,
       output: output,
       log: _log,
@@ -83,7 +79,7 @@ Future<void> _buildFromSource(
   final packageRoot = input.packageRoot;
   final shared = input.outputDirectoryShared;
   // FFmpeg, libaom and zlib: the pinned sources of native_artifacts/
-  // sources.json, fetched once into the native_prebuilt cache, or placed
+  // sources.json, fetched once into the kiln cache, or placed
   // there by a packager for a build without network.
   final environment = {
     'IMAGE_FFMPEG_FFMPEG_SOURCE': (await source.pinnedSource('ffmpeg')).path,

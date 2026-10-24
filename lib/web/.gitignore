@@ -1,5 +1,5 @@
-# native_prebuilt web install-dev: generated, do not edit.
-/.native_prebuilt_web_version
+# kiln web install-dev: generated, do not edit.
+/.kiln_web_version
 /image_ffmpeg_module.mjs
 /image_ffmpeg_module.wasm
-# End of native_prebuilt web install-dev.
+# End of kiln web install-dev.

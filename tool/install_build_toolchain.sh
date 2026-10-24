@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Installs the Linux and Windows build toolchain in the pinned Debian
 # containers. tool/build_native_*_docker.sh and the release workflow
-# (.github/workflows/native_release.yml) both run it, as root.
+# (.github/workflows/kiln_release.yml) both run it, as root.
 #
 # windows-arm64 installs llvm-mingw at /opt/llvm-mingw; add
 # /opt/llvm-mingw/bin to PATH. GCC has no Windows arm64 target.
