@@ -2,12 +2,13 @@
 /// and FFmpeg as Wasm libraries, then the shim as one Emscripten ES module,
 /// image_ffmpeg_module.mjs and image_ffmpeg_module.wasm in --out.
 ///
-/// The release workflow runs it in the pinned emscripten/emsdk:5.0.0 image
-/// (native_prebuilt ADR 002 D10). For a local build, activate Emscripten
+/// The kiln release workflow runs it in the pinned emscripten/emsdk:5.0.0
+/// image (kiln ADR 002 D10). --toolchain-file gets the Emscripten version
+/// for web.json. For a local build, activate Emscripten
 /// 5.0.0 or put it at ../emsdk, then install the files with
 ///
-///     dart run tool/build_web.dart --out /tmp/image_ffmpeg_web
-///     dart run native_prebuilt:web install-dev --from /tmp/image_ffmpeg_web
+///     dart run tool/kiln/build_web.dart --out /tmp/image_ffmpeg_web
+///     dart run kiln:web install-dev --from /tmp/image_ffmpeg_web
 library;
 
 import 'dart:io';
@@ -15,9 +16,13 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 
 const _usage =
-    'dart run tool/build_web.dart --out <dir> [--work <dir>]\n'
-    '  --out   Directory for the two generated files.\n'
-    '  --work  Directory for the libaom and FFmpeg builds. Default: build/.';
+    'dart run tool/kiln/build_web.dart --out <dir> [--work <dir>] '
+    '[--toolchain-file <file>]\n'
+    '  --out             Directory for the two generated files.\n'
+    '  --work            Directory for the libaom and FFmpeg builds. Default: '
+    r'build/, or $RUNNER_TEMP/image-ffmpeg-web-build in GitHub Actions.'
+    '\n'
+    '  --toolchain-file  Gets the Emscripten version.';
 
 const _outputs = ['image_ffmpeg_module.mjs', 'image_ffmpeg_module.wasm'];
 const _emscripten = '5.0.0 (a7c5deabd7c88ba1c38ebe988112256775f944c6)';
@@ -52,9 +57,17 @@ const _aomHeaders = [
 
 Future<void> main(List<String> args) async {
   final options = _parse(args);
-  final root = Directory.fromUri(Platform.script.resolve('..')).absolute.path;
+  final root = Directory.fromUri(
+    Platform.script.resolve('../..'),
+  ).absolute.path;
   final out = Directory(options['out']!).absolute;
-  final work = Directory(options['work'] ?? '$root/build').absolute.path;
+  final runnerTemp = Platform.environment['RUNNER_TEMP'];
+  final work = Directory(
+    options['work'] ??
+        (runnerTemp == null
+            ? '$root/build'
+            : '$runnerTemp/image-ffmpeg-web-build'),
+  ).absolute.path;
   if (await out.exists()) {
     await for (final entity in out.list()) {
       final name = entity.uri.pathSegments.lastWhere((s) => s.isNotEmpty);
@@ -77,6 +90,10 @@ Future<void> main(List<String> args) async {
     _fail(
       'Emscripten $_emscripten is required, found: ${version.split('\n').first}',
     );
+  }
+
+  if (options['toolchain-file'] case final path?) {
+    await File(path).writeAsString('Emscripten $_emscripten\n');
   }
 
   await run(['bash', 'tool/fetch_aom.sh']);
@@ -246,6 +263,7 @@ Map<String, String> _parse(List<String> args) {
       '-h' || '--help' => _exitHelp(),
       '--out' => 'out',
       '--work' => 'work',
+      '--toolchain-file' => 'toolchain-file',
       _ => _fail('Unknown argument: ${args[i]}\n$_usage'),
     };
     if (i + 1 == args.length) _fail('${args[i]} needs a value.\n$_usage');

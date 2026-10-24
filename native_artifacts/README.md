@@ -6,11 +6,11 @@ consumer build time or runtime.
 
 `prebuilt.json` pins the library of each target by SHA-256 and names the
 GitHub release that holds it. The workflow
-`.github/workflows/native_release.yml` writes it: it runs `hook/build.dart` in
+`.github/workflows/kiln_release.yml` writes it: it runs `hook/build.dart` in
 mode source for every target, uploads the libraries, and records the runner
 and toolchain of each target. The hook uses the release only when the package
-sources match its source key (`dart run native_prebuilt:key`). Check the
-release with `dart run native_prebuilt:check`.
+sources match its source key (`dart run kiln:key`). Check the
+release with `dart run kiln:check`.
 
 ## Source pins
 
@@ -46,8 +46,8 @@ Flutter multi-license format.
 
 `prebuilt.json` has the exact toolchain of each target. `web.json` pins the
 browser runtime of the same release: the Wasm module that the web job builds
-with `tool/build_web.dart` in the pinned `emscripten/emsdk:5.0.0` image, and
-the hand-written worker and loader in `lib/web/` (native_prebuilt ADR 002).
+with `tool/kiln/build_web.dart` in the pinned `emscripten/emsdk:5.0.0` image, and
+the hand-written worker and loader in `lib/web/` (kiln ADR 002).
 `manifest.json` pins the source commits (`dart run tool/verify_artifacts.dart`).
 
 Unsupported target tuples fail in the build hook rather than silently shipping

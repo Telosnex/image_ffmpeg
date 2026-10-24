@@ -16,10 +16,10 @@ browser_tests=(
 
 dart analyze
 dart run tool/verify_artifacts.dart
-dart run native_prebuilt:check
-# The browser tests load the web files from lib/web/ (native_prebuilt ADR 002
-# D13). Set IMAGE_FFMPEG_WEB_FROM to a tool/build_web.dart output to use it.
-dart run native_prebuilt:web install-dev ${IMAGE_FFMPEG_WEB_FROM:+--from "$IMAGE_FFMPEG_WEB_FROM"}
+dart run kiln:check
+# The browser tests load the web files from lib/web/ (kiln ADR 002
+# D13). Set IMAGE_FFMPEG_WEB_FROM to a tool/kiln/build_web.dart output to use it.
+dart run kiln:web install-dev ${IMAGE_FFMPEG_WEB_FROM:+--from "$IMAGE_FFMPEG_WEB_FROM"}
 dart run tool/update_browser_corpus_manifest.dart --check
 dart test -r compact
 if [[ -d native_test ]]; then

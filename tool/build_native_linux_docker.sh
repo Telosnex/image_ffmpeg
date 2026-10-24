@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds a Linux library in the Debian 11 container of the release workflow
-# (glibc 2.31). Keep the image in sync with .github/workflows/native_release.yml.
+# (glibc 2.31). Keep the image in sync with .github/workflows/kiln_release.yml.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"

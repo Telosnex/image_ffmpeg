@@ -15,7 +15,7 @@ Future<void> main(List<String> arguments) async {
   if (!capabilities.canDecodeImage) {
     stderr.writeln(
       'The bundled production artifact did not report FFmpeg support. '
-      'Reinstall the package and run dart run native_prebuilt:check.',
+      'Reinstall the package and run dart run kiln:check.',
     );
     exitCode = 2;
     return;

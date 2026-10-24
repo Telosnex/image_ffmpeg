@@ -1,7 +1,7 @@
 /// Checks the upstream source pins and the build profile in
 /// native_artifacts/manifest.json. The native libraries are in
 /// native_artifacts/prebuilt.json and the web files in
-/// native_artifacts/web.json; `dart run native_prebuilt:check` verifies both.
+/// native_artifacts/web.json; `dart run kiln:check` verifies both.
 library;
 
 import 'dart:convert';
@@ -41,7 +41,7 @@ Future<void> main() async {
     if (decoded.containsKey(key)) {
       throw FormatException(
         '$key: the web files belong in native_artifacts/web.json '
-        '(native_prebuilt ADR 002). native_prebuilt:check verifies them.',
+        '(kiln ADR 002). kiln:check verifies them.',
       );
     }
   }

@@ -1,0 +1,62 @@
+# Builds the native library for every target and the web runtime files, and
+# publishes them as a GitHub release. Telosnex/telosnex_ci_tools has the
+# jobs; tool/kiln/ has the image_ffmpeg steps:
+#
+#   prepare.dart     Installs the Linux and Windows toolchains in their
+#                    containers (tool/install_build_toolchain.sh).
+#   test_build.dart  The ABI boundary test on macos-arm64 and linux-x64.
+#   build_web.dart   Builds libaom, FFmpeg and the shim with Emscripten.
+#   test_web.dart    The Chrome tests, with dart2js and dart2wasm.
+#
+# Linux and Windows build in pinned Debian 11 (glibc 2.31) images, Windows
+# arm64 in Debian 12 with SHA-256-pinned llvm-mingw. Linux arm64 uses a
+# cross compiler. The web files build in the pinned emscripten/emsdk:5.0.0
+# image.
+#
+# Start it with
+#   git push -f origin HEAD:kiln-release       (release)
+#   git push -f origin HEAD:kiln-release-dry   (build only, no upload)
+# or with workflow_dispatch. On success it pushes the branch
+# kiln-manifest/<tag>. Merge that branch to use the release.
+name: Kiln release
+run-name: Kiln release / ${{ (github.ref_name == 'kiln-release-dry' || inputs.dry_run) && 'build only' || 'publish' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build only, upload nothing.
+        type: boolean
+        default: false
+  push:
+    branches: [kiln-release, kiln-release-dry]
+
+permissions:
+  contents: read
+
+jobs:
+  kiln-release:
+    uses: Telosnex/telosnex_ci_tools/.github/workflows/kiln_release.yml@194f8afa2c284d309e6249b540badacd6f342017 # v0.2.2
+    permissions:
+      contents: write
+    with:
+      dry-run: ${{ inputs.dry_run == true }}
+      # The 10 default targets, and the Intel macOS and iOS simulator.
+      targets: >-
+        ["windows-x64", "windows-arm64", "linux-x64", "linux-arm64",
+        "macos-arm64", "macos-x64", "ios-arm64-iphoneos",
+        "ios-arm64-iphonesimulator", "ios-x64-iphonesimulator",
+        "android-arm", "android-arm64", "android-x64"]
+      runners: >-
+        {"linux-x64": {"runner": "ubuntu-22.04", "image": "debian:bullseye-slim@sha256:cba95a21c96c1f5fc2470081829363eed57706634f7dc26e8c6712934303d57a"},
+        "linux-arm64": {"runner": "ubuntu-22.04", "image": "debian:bullseye-slim@sha256:cba95a21c96c1f5fc2470081829363eed57706634f7dc26e8c6712934303d57a"},
+        "windows-x64": {"runner": "ubuntu-22.04", "image": "debian:bullseye-slim@sha256:cba95a21c96c1f5fc2470081829363eed57706634f7dc26e8c6712934303d57a"},
+        "windows-arm64": {"runner": "ubuntu-22.04", "image": "debian@sha256:362e64223cc0da95422b3b13c045186fc0a81250e765d31c025fbddf257f6143"}}
+      # emscripten/emsdk:5.0.0.
+      web-container: emscripten/emsdk@sha256:67df07bc59f86685818fa801d340b54e576fe4276cfd3bcfc4da61d564217737
+      # Flutter passes iOS 13 to build hooks (flutter_tools targetIOSVersion).
+      build-args: >-
+        {"*": ["--ios-version", "13", "--macos-version", "12"],
+        "windows-arm64": ["--runner", "ubuntu-22.04, Debian 12 container"],
+        "linux-*": ["--runner", "ubuntu-22.04, Debian 11 container"],
+        "windows-x64": ["--runner", "ubuntu-22.04, Debian 11 container"]}

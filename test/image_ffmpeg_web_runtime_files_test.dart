@@ -8,7 +8,7 @@ import 'package:test/test.dart';
 import 'package:image_ffmpeg/src/backend/backend_web.dart';
 import 'package:image_ffmpeg/src/web_runtime.g.dart';
 
-/// native_prebuilt ADR 002 D7 and I3: every web runtime file loads with the
+/// kiln ADR 002 D7 and I3: every web runtime file loads with the
 /// query `v=<webRuntimeVersion>`, so a browser does not use a cached file of
 /// another version.
 void main() {
@@ -16,7 +16,7 @@ void main() {
     const base = 'https://app.example/sub/';
     expect(
       resolveWorkerUrl(base, null).toString(),
-      '${base}native_prebuilt/image_ffmpeg/image_ffmpeg_worker.mjs'
+      '${base}kiln/image_ffmpeg/image_ffmpeg_worker.mjs'
       '?v=$webRuntimeVersion',
     );
     expect(resolveWorkerUrl(base, Uri.parse('w/x.mjs?a=1')).queryParameters, {

@@ -16,8 +16,8 @@ const _abiVersion = 5;
 const _pixelFormatRgba8888 = 1;
 
 /// Where the image_ffmpeg build hook installs the worker in a Flutter web
-/// app (native_prebuilt ADR 002 D1, D8).
-const defaultWorkerUrl = 'native_prebuilt/image_ffmpeg/image_ffmpeg_worker.mjs';
+/// app (kiln ADR 002 D1, D8).
+const defaultWorkerUrl = 'kiln/image_ffmpeg/image_ffmpeg_worker.mjs';
 
 /// [workerUri] resolved against [baseUri], with the query
 /// `v=<webRuntimeVersion>` unless it has a `v` query already (ADR 002 D7).

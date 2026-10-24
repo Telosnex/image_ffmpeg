@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds a Windows library in the Debian container of the release workflow.
 # No Windows SDK or Visual Studio is required. Keep the images in sync with
-# .github/workflows/native_release.yml.
+# .github/workflows/kiln_release.yml.
 #
 # windows-x64: Debian 11 amd64 with MinGW-w64 GCC.
 # windows-arm64: Debian 12 with the pinned llvm-mingw release of

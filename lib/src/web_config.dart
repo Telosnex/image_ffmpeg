@@ -11,10 +11,10 @@ abstract final class ImageFfmpegWeb {
 
   /// Where to load `image_ffmpeg_worker.mjs` from.
   ///
-  /// When null, `native_prebuilt/image_ffmpeg/image_ffmpeg_worker.mjs` is
+  /// When null, `kiln/image_ffmpeg/image_ffmpeg_worker.mjs` is
   /// resolved against the document base URI. In a Flutter web build, the
   /// image_ffmpeg build hook installs the four web files there
-  /// (native_prebuilt ADR 002).
+  /// (kiln ADR 002).
   ///
   /// Non-Flutter embedders (for example `dart compile js` sites or browser
   /// tests) must serve this package's `lib/web/` directory somewhere
