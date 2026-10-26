@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@81f9d8a288f7172d3767a2dfa1b6f57fa8a2689b # main
       - run: dart pub get --no-example
       - run: dart test -r expanded
       # The image corpus against the native library.
@@ -66,23 +66,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@81f9d8a288f7172d3767a2dfa1b6f57fa8a2689b # main
       - run: dart pub get --no-example
       - run: dart run kiln:web install-dev
-      - name: dart test -p ${{ matrix.platform }} -c ${{ matrix.compiler }}
-        env:
-          PLATFORM: ${{ matrix.platform }}
-          COMPILER: ${{ matrix.compiler }}
-        # The browser tests of tool/test_all.sh.
-        run: |
-          dart test -p "$PLATFORM" -c "$COMPILER" -j 1 -r expanded \
-            test/image_ffmpeg_web_bad_worker_test.dart \
-            test/image_ffmpeg_web_test.dart \
-            test/image_ffmpeg_web_runtime_files_test.dart \
-            test/image_ffmpeg_web_pool_test.dart \
-            test/image_ffmpeg_web_serial_pool_test.dart \
-            test/image_ffmpeg_web_corpus_test.dart \
-            test/image_ffmpeg_synthetic_operation_test.dart
+      - uses: Telosnex/telosnex_ci_tools/actions/dart-test-browser@81f9d8a288f7172d3767a2dfa1b6f57fa8a2689b # main
+        with:
+          platform: ${{ matrix.platform }}
+          compiler: ${{ matrix.compiler }}
+          args: -j 1 test/image_ffmpeg_web_bad_worker_test.dart test/image_ffmpeg_web_test.dart test/image_ffmpeg_web_runtime_files_test.dart test/image_ffmpeg_web_pool_test.dart test/image_ffmpeg_web_serial_pool_test.dart test/image_ffmpeg_web_corpus_test.dart test/image_ffmpeg_synthetic_operation_test.dart
 
   ios:
     name: iOS ARM64 simulator
@@ -92,9 +83,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@81f9d8a288f7172d3767a2dfa1b6f57fa8a2689b # main
       - run: dart pub get --no-example
-      - uses: Telosnex/telosnex_ci_tools/actions/ios-simulator-boot@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+      - uses: Telosnex/telosnex_ci_tools/actions/ios-simulator-boot@81f9d8a288f7172d3767a2dfa1b6f57fa8a2689b # main
       - run: tool/test_ios_simulator_artifact.sh
 
   android:
@@ -105,9 +96,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@81f9d8a288f7172d3767a2dfa1b6f57fa8a2689b # main
       - run: dart pub get --no-example
-      - uses: Telosnex/telosnex_ci_tools/actions/android-emulator@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+      - uses: Telosnex/telosnex_ci_tools/actions/android-emulator@81f9d8a288f7172d3767a2dfa1b6f57fa8a2689b # main
         with:
           api-level: '36'
       - run: tool/test_android_artifact.sh

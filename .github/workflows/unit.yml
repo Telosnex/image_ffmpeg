@@ -25,10 +25,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@81f9d8a288f7172d3767a2dfa1b6f57fa8a2689b # main
       - run: dart pub get --no-example
       - run: dart format --output=none --set-exit-if-changed lib test tool
-      - run: dart analyze --fatal-infos
+      # The package: the example is a Flutter app (dart pub get --no-example).
+      - run: dart analyze --fatal-infos lib test tool
       - run: dart run tool/verify_artifacts.dart
       - run: dart run kiln:check
       - run: dart run tool/update_browser_corpus_manifest.dart --check

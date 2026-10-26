@@ -19,5 +19,8 @@ void main() {
         reason: 'YUVJ input must be normalized before creating SwsContext.',
       );
     },
+    // The subprocess's `dart run` replaces the native library in
+    // .dart_tool/lib, which this test process has loaded; Windows refuses.
+    testOn: '!windows',
   );
 }
