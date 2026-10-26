@@ -44,11 +44,21 @@ void main() {
           name.toDart,
       ];
       final loaded = urls.where((u) => u.contains('/image_ffmpeg_')).toList();
-      expect(loaded.map((u) => Uri.parse(u).pathSegments.last).toSet(), {
+      // Safari lists no resource entry for the .mjs modules when the whole
+      // suite runs (earlier files loaded them; likely its memory cache).
+      // There, only the .wasm is required. Every listed file needs ?v=.
+      final names = loaded.map((u) => Uri.parse(u).pathSegments.last).toSet();
+      final all = {
         'image_ffmpeg_module.mjs',
         'image_ffmpeg_loader.mjs',
         'image_ffmpeg_module.wasm',
-      });
+      };
+      if (_isSafari) {
+        expect(names, containsAll({'image_ffmpeg_module.wasm'}));
+        expect(names.difference(all), isEmpty);
+      } else {
+        expect(names, all);
+      }
       for (final u in loaded) {
         expect(Uri.parse(u).queryParameters['v'], webRuntimeVersion, reason: u);
       }
@@ -102,3 +112,13 @@ extension type _Worker._(JSObject _) implements JSObject {
   external void terminate();
   external set onmessage(JSFunction? handler);
 }
+
+bool get _isSafari {
+  final ua = _navigatorUserAgent.toDart;
+  return ua.contains('Safari/') &&
+      !ua.contains('Chrome/') &&
+      !ua.contains('Firefox/');
+}
+
+@JS('navigator.userAgent')
+external JSString get _navigatorUserAgent;
