@@ -1,0 +1,113 @@
+name: Integration
+
+on:
+  push:
+    # ci/** branches run it too: a new workflow cannot be started by hand
+    # before it is on main.
+    branches: [main, 'ci/**']
+  schedule:
+    - cron: '23 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # The VM tests load the released native library of each platform.
+  native:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: Linux x64, runner: ubuntu-24.04 }
+          - { name: Linux ARM64, runner: ubuntu-24.04-arm }
+          - { name: macOS ARM64, runner: macos-26 }
+          - { name: macOS x64, runner: macos-15-intel }
+          - { name: Windows x64, runner: windows-2025 }
+          - { name: Windows ARM64, runner: windows-11-arm }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+      - run: dart pub get
+      - run: dart test -r expanded
+      # The image corpus against the native library.
+      - name: native_test
+        working-directory: native_test
+        run: |
+          dart pub get
+          dart test -r expanded
+
+  web:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: Web Linux x64 Chrome dart2js, runner: ubuntu-24.04, platform: chrome, compiler: dart2js }
+          - { name: Web Linux x64 Chrome dart2wasm, runner: ubuntu-24.04, platform: chrome, compiler: dart2wasm }
+          - { name: Web Linux x64 Firefox dart2js, runner: ubuntu-24.04, platform: firefox, compiler: dart2js }
+          - { name: Web macOS ARM64 Safari dart2js, runner: macos-26, platform: safari, compiler: dart2js }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+      - run: dart pub get
+      - run: dart run kiln:web install-dev
+      - name: dart test -p ${{ matrix.platform }} -c ${{ matrix.compiler }}
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          COMPILER: ${{ matrix.compiler }}
+        # The browser tests of tool/test_all.sh.
+        run: |
+          dart test -p "$PLATFORM" -c "$COMPILER" -j 1 -r expanded \
+            test/image_ffmpeg_web_bad_worker_test.dart \
+            test/image_ffmpeg_web_test.dart \
+            test/image_ffmpeg_web_runtime_files_test.dart \
+            test/image_ffmpeg_web_pool_test.dart \
+            test/image_ffmpeg_web_serial_pool_test.dart \
+            test/image_ffmpeg_web_corpus_test.dart \
+            test/image_ffmpeg_synthetic_operation_test.dart
+
+  ios:
+    name: iOS ARM64 simulator
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+      - run: dart pub get
+      - uses: Telosnex/telosnex_ci_tools/actions/ios-simulator-boot@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+      - run: tool/test_ios_simulator_artifact.sh
+
+  android:
+    name: Android x64 emulator
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+      - run: dart pub get
+      - uses: Telosnex/telosnex_ci_tools/actions/android-emulator@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
+        with:
+          api-level: '36'
+      - run: tool/test_android_artifact.sh

@@ -25,10 +25,7 @@ void main() {
     expect(ImageFormat.ico.wireValue, 10);
     expect(ImageFormat.fromWireValue(8), ImageFormat.avif);
     expect(ImageOrientation.rotate90.wireValue, 6);
-    expect(
-      ImageOrientation.fromWireValue(7),
-      ImageOrientation.transverse,
-    );
+    expect(ImageOrientation.fromWireValue(7), ImageOrientation.transverse);
     expect(JpegChroma.yuv444.wireValue, 1);
     expect(BoxAverageAlphaMode.opaqueOnly.wireValue, 1);
     expect(() => ImageFormat.fromWireValue(99), throwsArgumentError);
