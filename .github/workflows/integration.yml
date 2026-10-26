@@ -41,7 +41,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
-      - run: dart pub get
+      - run: dart pub get --no-example
       - run: dart test -r expanded
       # The image corpus against the native library.
       - name: native_test
@@ -67,7 +67,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
-      - run: dart pub get
+      - run: dart pub get --no-example
       - run: dart run kiln:web install-dev
       - name: dart test -p ${{ matrix.platform }} -c ${{ matrix.compiler }}
         env:
@@ -93,7 +93,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
-      - run: dart pub get
+      - run: dart pub get --no-example
       - uses: Telosnex/telosnex_ci_tools/actions/ios-simulator-boot@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
       - run: tool/test_ios_simulator_artifact.sh
 
@@ -106,7 +106,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
-      - run: dart pub get
+      - run: dart pub get --no-example
       - uses: Telosnex/telosnex_ci_tools/actions/android-emulator@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
         with:
           api-level: '36'

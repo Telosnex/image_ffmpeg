@@ -26,7 +26,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@8e94d6a140db5300d9e5329bc8c2e4dc30154a08 # main
-      - run: dart pub get
+      - run: dart pub get --no-example
       - run: dart format --output=none --set-exit-if-changed lib test tool
       - run: dart analyze --fatal-infos
       - run: dart run tool/verify_artifacts.dart
