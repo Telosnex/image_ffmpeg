@@ -264,11 +264,8 @@ dart run tool/render_synthetic_operation.dart --list
 dart run tool/render_synthetic_operation.dart v1/crop-bottom-right /tmp/case
 ```
 
-`dart_test.yaml` routes Safari through `tool/safari_test_launcher.sh`. The
-wrapper extracts `package:test`'s loopback manager URL and sends the HTTP URL to
-Safari through Launch Services, avoiding Safari's interactive **Confirm the
-file to load** dialog for the temporary `redirect.html`. It remains alive for
-the suite and closes only its test-manager tab afterward.
+Safari tests need `package:test` 1.33 or newer, which drives Safari through
+`safaridriver`. Enable it once: `sudo safaridriver --enable`.
 
 Browsers cannot enumerate the fixture filesystem, so the corpus tests register
 cases from `test/support/image_corpus_manifest.dart`. Refreshing the upstream
