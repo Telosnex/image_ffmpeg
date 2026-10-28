@@ -21,26 +21,17 @@ defaults:
     shell: bash
 
 jobs:
-  # The VM tests load the released native library of each platform.
-  native:
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.runner }}
+  # The VM tests load the released native library of each platform. The
+  # desktop jobs share the steps of the first (YAML anchor).
+  desktop-linux-x64:
+    name: Linux x64
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { name: Linux x64, runner: ubuntu-24.04 }
-          - { name: Linux ARM64, runner: ubuntu-24.04-arm }
-          - { name: macOS ARM64, runner: macos-26 }
-          - { name: macOS x64, runner: macos-15-intel }
-          - { name: Windows x64, runner: windows-2025 }
-          - { name: Windows ARM64, runner: windows-11-arm }
-    steps:
+    steps: &desktop_steps
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@ac661f93e2b65b203d12956ecc215da3b8ddf871 # main
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@cba77fc0d4330f1bef81193c53cd7dd976f0ebcf # v0.5.3
       - run: dart pub get --no-example
       - run: dart test -r expanded
       # The image corpus against the native library.
@@ -50,30 +41,84 @@ jobs:
           dart pub get
           dart test -r expanded
 
-  web:
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.runner }}
+  desktop-linux-arm64:
+    name: Linux ARM64
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { name: Web Linux x64 Chrome dart2js, runner: ubuntu-24.04, platform: chrome, compiler: dart2js }
-          - { name: Web Linux x64 Chrome dart2wasm, runner: ubuntu-24.04, platform: chrome, compiler: dart2wasm }
-          - { name: Web Linux x64 Firefox dart2js, runner: ubuntu-24.04, platform: firefox, compiler: dart2js }
-          - { name: Web macOS ARM64 Safari dart2js, runner: macos-26, platform: safari, compiler: dart2js }
-    steps:
+    steps: *desktop_steps
+
+  desktop-macos-arm64:
+    name: macOS ARM64
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps: *desktop_steps
+
+  desktop-macos-x64:
+    name: macOS x64
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    steps: *desktop_steps
+
+  desktop-windows-x64:
+    name: Windows x64
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps: *desktop_steps
+
+  desktop-windows-arm64:
+    name: Windows ARM64
+    runs-on: windows-11-arm
+    timeout-minutes: 30
+    steps: *desktop_steps
+
+  # The web jobs share the steps of the first. BROWSER and COMPILER are the
+  # arguments of dart-test-browser.
+  web-linux-chrome-dart2js:
+    name: Web Linux x64 Chrome dart2js
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      BROWSER: chrome
+      COMPILER: dart2js
+    steps: &web_steps
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@ac661f93e2b65b203d12956ecc215da3b8ddf871 # main
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@cba77fc0d4330f1bef81193c53cd7dd976f0ebcf # v0.5.3
       - run: dart pub get --no-example
       - run: dart run kiln:web install-dev
-      - uses: Telosnex/telosnex_ci_tools/actions/dart-test-browser@ac661f93e2b65b203d12956ecc215da3b8ddf871 # main
+      - uses: Telosnex/telosnex_ci_tools/actions/dart-test-browser@cba77fc0d4330f1bef81193c53cd7dd976f0ebcf # v0.5.3
         with:
-          platform: ${{ matrix.platform }}
-          compiler: ${{ matrix.compiler }}
+          platform: ${{ env.BROWSER }}
+          compiler: ${{ env.COMPILER }}
           args: -j 1 test/image_ffmpeg_web_bad_worker_test.dart test/image_ffmpeg_web_test.dart test/image_ffmpeg_web_runtime_files_test.dart test/image_ffmpeg_web_pool_test.dart test/image_ffmpeg_web_serial_pool_test.dart test/image_ffmpeg_web_corpus_test.dart test/image_ffmpeg_synthetic_operation_test.dart
+
+  web-linux-chrome-dart2wasm:
+    name: Web Linux x64 Chrome dart2wasm
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      BROWSER: chrome
+      COMPILER: dart2wasm
+    steps: *web_steps
+
+  web-linux-firefox-dart2js:
+    name: Web Linux x64 Firefox dart2js
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      BROWSER: firefox
+      COMPILER: dart2js
+    steps: *web_steps
+
+  web-macos-safari-dart2js:
+    name: Web macOS ARM64 Safari dart2js
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      BROWSER: safari
+      COMPILER: dart2js
+    steps: *web_steps
 
   ios:
     name: iOS ARM64 simulator
@@ -83,10 +128,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@ac661f93e2b65b203d12956ecc215da3b8ddf871 # main
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@cba77fc0d4330f1bef81193c53cd7dd976f0ebcf # v0.5.3
       - run: dart pub get --no-example
-      - uses: Telosnex/telosnex_ci_tools/actions/ios-simulator-boot@ac661f93e2b65b203d12956ecc215da3b8ddf871 # main
-      - run: tool/test_ios_simulator_artifact.sh
+      - uses: Telosnex/telosnex_ci_tools/actions/ios-simulator-boot@cba77fc0d4330f1bef81193c53cd7dd976f0ebcf # v0.5.3
+      # The script writes no log file: tee keeps its output for the upload.
+      # bash (the workflow default) runs with pipefail, so a failure stays one.
+      - name: Simulator test (tool/test_ios_simulator_artifact.sh)
+        run: tool/test_ios_simulator_artifact.sh 2>&1 | tee "$RUNNER_TEMP/ios-simulator-test.log"
+      - name: Upload the simulator logs
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ios-simulator-logs
+          path: ${{ runner.temp }}/ios-simulator-test.log
+          if-no-files-found: ignore
 
   android:
     name: Android x64 emulator
@@ -96,9 +151,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@ac661f93e2b65b203d12956ecc215da3b8ddf871 # main
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@cba77fc0d4330f1bef81193c53cd7dd976f0ebcf # v0.5.3
       - run: dart pub get --no-example
-      - uses: Telosnex/telosnex_ci_tools/actions/android-emulator@ac661f93e2b65b203d12956ecc215da3b8ddf871 # main
+      - id: emulator
+        uses: Telosnex/telosnex_ci_tools/actions/android-emulator@cba77fc0d4330f1bef81193c53cd7dd976f0ebcf # v0.5.3
         with:
           api-level: '36'
       - run: tool/test_android_artifact.sh
+      - name: Upload the emulator logs
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android-emulator-logs
+          path: |
+            ${{ steps.emulator.outputs.log }}
+            ${{ steps.emulator.outputs.logcat }}
+          if-no-files-found: ignore
