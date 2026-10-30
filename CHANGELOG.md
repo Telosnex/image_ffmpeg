@@ -1,3 +1,8 @@
+## 0.1.0
+
+- First release on pub.dev. FFmpeg is built LGPL (no GPL or nonfree
+  components); LICENSE has its license.
+
 ## 0.0.1
 
 - Download the native libraries from a GitHub release with
