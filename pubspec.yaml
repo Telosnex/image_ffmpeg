@@ -1,8 +1,10 @@
 name: image_ffmpeg
-description: Pinned cross-platform FFmpeg image decoding and encoding through native FFI and WebAssembly.
-version: 0.0.1
-homepage: https://telosnex.com
-publish_to: none
+description: >-
+  Image decoding and encoding with a pinned FFmpeg build, the same on every
+  platform. Native through FFI, web through WebAssembly.
+version: 0.1.0
+repository: https://github.com/Telosnex/image_ffmpeg
+issue_tracker: https://github.com/Telosnex/image_ffmpeg/issues
 
 environment:
   sdk: ^3.12.2
