@@ -1,0 +1,17 @@
+# Upstream sources, checked daily by the Upstream watch workflow
+# (telosnex_ci_tools, lib/src/upstream.dart). Set `seen` to skip an update.
+# Patch releases alert: these decoders read untrusted images.
+sources:
+  - name: FFmpeg
+    tags: https://github.com/FFmpeg/FFmpeg.git
+    version: 'n(\d+(?:\.\d+)*)'
+    pin: {file: tool/fetch_ffmpeg.sh, pattern: '^revision=([0-9a-f]{40})'}
+    alert: patch
+  - name: libaom
+    tags: https://aomedia.googlesource.com/aom
+    pin: {file: tool/fetch_aom.sh, pattern: '^revision=([0-9a-f]{40})'}
+    alert: patch
+  - name: zlib
+    tags: https://github.com/madler/zlib.git
+    pin: {file: tool/fetch_native_sources.sh, pattern: '^zlib_commit=([0-9a-f]{40})'}
+    alert: patch
