@@ -1,3 +1,9 @@
+## 0.1.1
+
+- FFmpeg 9.0.2 (from 9.0), libaom 3.15.3 (from 3.12.1) and zlib 1.3.2
+  (from 1.3.1): security and bug fixes in the code that decodes untrusted
+  images. The Web module grows by about 92 KB.
+
 ## 0.1.0
 
 - First release on pub.dev. FFmpeg is built LGPL (no GPL or nonfree
