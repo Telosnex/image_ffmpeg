@@ -4,9 +4,9 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 target="${1:-}"
 
-ffmpeg_commit=d32b387f2b0a484599d4587d651891f0c63c4238
-aom_commit=10aece4157eb79315da205f39e19bf6ab3ee30d0
-zlib_commit=51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf
+ffmpeg_commit=946fcce07b6dcd0331c8cc609192aeff5e1924f8
+aom_commit=b141d9c45db236335351c8a4b2a14b3ade27c937
+zlib_commit=da607da739fa6047df13e66a2af6b8bec7c2a498
 profile_version=9
 
 usage() {
@@ -314,24 +314,29 @@ if [[ ! -f "$zlib_build/.image_ffmpeg_complete" ]]; then
     -DCMAKE_C_FLAGS="$common_cflags" \
     -DBUILD_SHARED_LIBS=OFF \
     -DZLIB_BUILD_EXAMPLES=OFF \
+    -DZLIB_BUILD_SHARED=OFF \
+    -DZLIB_BUILD_TESTING=OFF \
     "${cmake_platform_args[@]}"
   cmake --build "$zlib_build" --parallel "$jobs"
   cmake --install "$zlib_build"
   touch "$zlib_build/.image_ffmpeg_complete"
 fi
-zlib_archive="$(find "$zlib_prefix" -type f \( -name 'libz.a' -o -name 'libzlibstatic.a' \) -print -quit)"
+zlib_archive="$(find "$zlib_prefix" -type f \( -name 'libz.a' -o -name 'libzs.a' -o -name 'libzlibstatic.a' \) -print -quit)"
 [[ -f "$zlib_archive" ]] || { echo 'zlib static archive is missing' >&2; exit 1; }
 if [[ "$(basename "$zlib_archive")" != libz.a ]]; then
   cp "$zlib_archive" "$zlib_prefix/lib/libz.a"
   zlib_archive="$zlib_prefix/lib/libz.a"
 fi
-# zlib's CMake project installs shared and static libraries together. Remove
-# the shared copy so FFmpeg's `-lz` configure check and final link cannot
+# zlib 1.3.2 builds only the static library here (ZLIB_BUILD_SHARED=OFF; it
+# ignores BUILD_SHARED_LIBS) and names it libzs.a on Windows. Remove any
+# shared copy anyway so FFmpeg's `-lz` configure check and final link cannot
 # accidentally select it.
-find "$zlib_prefix" -type f \( -name 'libz*.dylib' -o -name 'libz.so*' -o -name 'libzlib.dll' \) -delete
+find "$zlib_prefix" -type f \( -name 'libz*.dylib' -o -name 'libz.so*' -o -name 'libz*.dll' -o -name 'libz.dll.a' \) -delete
 
 if [[ ! -f "$aom_build/.image_ffmpeg_complete" ]]; then
   rm -rf "$aom_build"
+  # libaom 3.15 adds aomdec and aomenc unless ENABLE_APPS is off; on iOS their
+  # install rules fail at configure time (no BUNDLE DESTINATION).
   cmake -S "$aom_source" -B "$aom_build" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$aom_prefix" \
@@ -343,6 +348,7 @@ if [[ ! -f "$aom_build/.image_ffmpeg_complete" ]]; then
     -DBUILD_SHARED_LIBS=OFF \
     -DAOM_TARGET_CPU=generic \
     -DENABLE_DOCS=OFF \
+    -DENABLE_APPS=OFF \
     -DENABLE_EXAMPLES=OFF \
     -DENABLE_TESTS=OFF \
     -DENABLE_TOOLS=OFF \

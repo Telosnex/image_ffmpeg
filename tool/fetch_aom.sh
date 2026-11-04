@@ -3,7 +3,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 destination="$root/third_party/aom"
-revision=10aece4157eb79315da205f39e19bf6ab3ee30d0
+revision=b141d9c45db236335351c8a4b2a14b3ade27c937
 
 if [[ -d "$destination/.git" ]]; then
   actual="$(git -C "$destination" rev-parse HEAD)"

@@ -4,17 +4,17 @@
     {
       "name": "ffmpeg",
       "git": "https://github.com/FFmpeg/FFmpeg.git",
-      "commit": "d32b387f2b0a484599d4587d651891f0c63c4238"
+      "commit": "946fcce07b6dcd0331c8cc609192aeff5e1924f8"
     },
     {
       "name": "aom",
       "git": "https://aomedia.googlesource.com/aom",
-      "commit": "10aece4157eb79315da205f39e19bf6ab3ee30d0"
+      "commit": "b141d9c45db236335351c8a4b2a14b3ade27c937"
     },
     {
       "name": "zlib",
       "git": "https://github.com/madler/zlib.git",
-      "commit": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"
+      "commit": "da607da739fa6047df13e66a2af6b8bec7c2a498"
     }
   ]
 }

@@ -33,7 +33,7 @@ for argument in "$@"; do
       exit 0
       ;;
     --modversion)
-      echo "3.12.1"
+      echo "3.15.3"
       exit 0
       ;;
   esac

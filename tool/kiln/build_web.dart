@@ -116,6 +116,8 @@ Future<void> main(List<String> args) async {
     '-DBUILD_SHARED_LIBS=OFF',
     '-DAOM_TARGET_CPU=generic',
     '-DENABLE_DOCS=OFF',
+    // libaom 3.15 builds aomdec and aomenc unless ENABLE_APPS is off.
+    '-DENABLE_APPS=OFF',
     '-DENABLE_EXAMPLES=OFF',
     '-DENABLE_TESTS=OFF',
     '-DENABLE_TOOLS=OFF',

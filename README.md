@@ -16,8 +16,8 @@ behind one Dart API:
 
 Builds bundle SHA-256-pinned native and Web artifacts for Android, iOS, Linux,
 macOS, Windows, and browsers. Each native artifact contains the stable shim
-plus the official FFmpeg 9.0 release, decoder-only libaom 3.12.1, and zlib
-1.3.1. FFmpeg 9.0 includes its native animated-WebP decoder and is pinned by the
+plus the official FFmpeg 9.0.2 release, decoder-only libaom 3.15.3, and zlib
+1.3.2. FFmpeg 9.0.2 includes its native animated-WebP decoder and is pinned by the
 release tag's exact peeled commit. Consumers do not install FFmpeg,
 Homebrew, CocoaPods, or Gradle native dependencies. Browsers use the same
 reduced codec profile through a bundled WebAssembly module running off the UI
@@ -311,7 +311,7 @@ Without `--from`, `install-dev` downloads the released files of
 For a real browser run, link or copy the fixture to
 `benchmark/wallpaper.jpg`, serve the package root, and open
 `benchmark/benchmark_wallpaper_web.html` in Chrome. The final module is about
-2.5 MiB with the pinned FFmpeg 9.0 release, libaom 3.12.1, the nine
+2.5 MiB with the pinned FFmpeg 9.0.2 release, libaom 3.15.3, the nine
 decode formats listed above, and JPEG/PNG encoders.
 
 Build native libraries from immutable source commits into
