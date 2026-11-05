@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@c03733211dca28d8590002199d7a87af85edde51 # v0.5.7
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@4a798518378fb0c362ebe42940227560e6b4ecde # v0.5.8
       - run: dart pub get --no-example
       - run: dart test -r expanded
       # The image corpus against the native library.
@@ -84,10 +84,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@c03733211dca28d8590002199d7a87af85edde51 # v0.5.7
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@4a798518378fb0c362ebe42940227560e6b4ecde # v0.5.8
       - run: dart pub get --no-example
       - run: dart run kiln:web install-dev
-      - uses: Telosnex/telosnex_ci_tools/actions/dart-test-browser@c03733211dca28d8590002199d7a87af85edde51 # v0.5.7
+      - uses: Telosnex/telosnex_ci_tools/actions/dart-test-browser@4a798518378fb0c362ebe42940227560e6b4ecde # v0.5.8
         with:
           platform: ${{ env.BROWSER }}
           compiler: ${{ env.COMPILER }}
@@ -128,9 +128,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@c03733211dca28d8590002199d7a87af85edde51 # v0.5.7
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@4a798518378fb0c362ebe42940227560e6b4ecde # v0.5.8
       - run: dart pub get --no-example
-      - uses: Telosnex/telosnex_ci_tools/actions/ios-simulator-boot@c03733211dca28d8590002199d7a87af85edde51 # v0.5.7
+      - uses: Telosnex/telosnex_ci_tools/actions/ios-simulator-boot@4a798518378fb0c362ebe42940227560e6b4ecde # v0.5.8
       # The script writes no log file: tee keeps its output for the upload.
       # bash (the workflow default) runs with pipefail, so a failure stays one.
       - name: Simulator test (tool/test_ios_simulator_artifact.sh)
@@ -151,10 +151,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@c03733211dca28d8590002199d7a87af85edde51 # v0.5.7
+      - uses: Telosnex/telosnex_ci_tools/actions/setup-flutter@4a798518378fb0c362ebe42940227560e6b4ecde # v0.5.8
       - run: dart pub get --no-example
       - id: emulator
-        uses: Telosnex/telosnex_ci_tools/actions/android-emulator@c03733211dca28d8590002199d7a87af85edde51 # v0.5.7
+        uses: Telosnex/telosnex_ci_tools/actions/android-emulator@4a798518378fb0c362ebe42940227560e6b4ecde # v0.5.8
         with:
           api-level: '36'
       - run: tool/test_android_artifact.sh
