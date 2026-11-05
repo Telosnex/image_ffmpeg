@@ -2,7 +2,7 @@ name: image_ffmpeg
 description: >-
   Image decoding and encoding with a pinned FFmpeg build, the same on every
   platform. Native through FFI, web through WebAssembly.
-version: 0.1.1
+version: 0.1.2
 repository: https://github.com/Telosnex/image_ffmpeg
 issue_tracker: https://github.com/Telosnex/image_ffmpeg/issues
 

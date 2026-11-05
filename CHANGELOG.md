@@ -1,3 +1,8 @@
+## 0.1.2
+
+- zlib 1.4 (from 1.3.2): security fixes in the code that decompresses PNG
+  and other deflate data in untrusted images.
+
 ## 0.1.1
 
 - FFmpeg 9.0.2 (from 9.0), libaom 3.15.3 (from 3.12.1) and zlib 1.3.2
