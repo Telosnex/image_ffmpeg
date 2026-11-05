@@ -3,3 +3,10 @@ include: package:lints/recommended.yaml
 analyzer:
   exclude:
     - lib/image_ffmpeg_bindings_generated.dart
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
