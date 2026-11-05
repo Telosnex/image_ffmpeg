@@ -1,3 +1,9 @@
+## 0.1.3
+
+- 0.1.2's prebuilt native libraries did not match its sources, so the build
+  hook built FFmpeg from source instead of downloading them. 0.1.3 ships the
+  matching prebuilt libraries; the code is the same as 0.1.2.
+
 ## 0.1.2
 
 - zlib 1.4 (from 1.3.2): security fixes in the code that decompresses PNG
