@@ -7,7 +7,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 third_party="${IMAGE_FFMPEG_THIRD_PARTY:-$root/third_party}"
 ffmpeg_commit=946fcce07b6dcd0331c8cc609192aeff5e1924f8
 aom_commit=b141d9c45db236335351c8a4b2a14b3ade27c937
-zlib_commit=da607da739fa6047df13e66a2af6b8bec7c2a498
+zlib_commit=99623ef7097352da7993ba614161fd6a311e046e
 
 fetch_at_commit() {
   local name="$1"

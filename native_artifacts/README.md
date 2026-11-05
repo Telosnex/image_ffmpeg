@@ -16,7 +16,7 @@ release with `dart run kiln:check`.
 
 - FFmpeg `946fcce07b6dcd0331c8cc609192aeff5e1924f8` (`n9.0.2`)
 - libaom `b141d9c45db236335351c8a4b2a14b3ade27c937` (`v3.15.3`)
-- zlib `da607da739fa6047df13e66a2af6b8bec7c2a498` (`v1.3.2`)
+- zlib `99623ef7097352da7993ba614161fd6a311e046e` (`v1.4`)
 - native/Web build profile `9`
 
 The reduced profile contains only libavformat, libavcodec, libavutil and

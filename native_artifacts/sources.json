@@ -14,7 +14,7 @@
     {
       "name": "zlib",
       "git": "https://github.com/madler/zlib.git",
-      "commit": "da607da739fa6047df13e66a2af6b8bec7c2a498"
+      "commit": "99623ef7097352da7993ba614161fd6a311e046e"
     }
   ]
 }

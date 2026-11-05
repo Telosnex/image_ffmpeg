@@ -10,7 +10,7 @@ import 'dart:io';
 const _expectedSources = {
   'ffmpeg': '946fcce07b6dcd0331c8cc609192aeff5e1924f8',
   'libaom': 'b141d9c45db236335351c8a4b2a14b3ade27c937',
-  'zlib': 'da607da739fa6047df13e66a2af6b8bec7c2a498',
+  'zlib': '99623ef7097352da7993ba614161fd6a311e046e',
 };
 
 Future<void> main() async {

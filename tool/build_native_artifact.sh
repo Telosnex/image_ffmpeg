@@ -6,7 +6,7 @@ target="${1:-}"
 
 ffmpeg_commit=946fcce07b6dcd0331c8cc609192aeff5e1924f8
 aom_commit=b141d9c45db236335351c8a4b2a14b3ade27c937
-zlib_commit=da607da739fa6047df13e66a2af6b8bec7c2a498
+zlib_commit=99623ef7097352da7993ba614161fd6a311e046e
 profile_version=9
 
 usage() {
@@ -327,10 +327,10 @@ if [[ "$(basename "$zlib_archive")" != libz.a ]]; then
   cp "$zlib_archive" "$zlib_prefix/lib/libz.a"
   zlib_archive="$zlib_prefix/lib/libz.a"
 fi
-# zlib 1.3.2 builds only the static library here (ZLIB_BUILD_SHARED=OFF; it
-# ignores BUILD_SHARED_LIBS) and names it libzs.a on Windows. Remove any
-# shared copy anyway so FFmpeg's `-lz` configure check and final link cannot
-# accidentally select it.
+# zlib 1.3.2 and later build only the static library here
+# (ZLIB_BUILD_SHARED=OFF; they ignore BUILD_SHARED_LIBS) and name it libzs.a
+# on Windows. Remove any shared copy anyway so FFmpeg's `-lz` configure check
+# and final link cannot accidentally select it.
 find "$zlib_prefix" -type f \( -name 'libz*.dylib' -o -name 'libz.so*' -o -name 'libz*.dll' -o -name 'libz.dll.a' \) -delete
 
 if [[ ! -f "$aom_build/.image_ffmpeg_complete" ]]; then
