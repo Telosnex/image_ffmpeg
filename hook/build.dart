@@ -87,9 +87,9 @@ Future<void> _buildFromSource(
     'IMAGE_FFMPEG_ZLIB_SOURCE': (await source.pinnedSource('zlib')).path,
     'IMAGE_FFMPEG_BUILD_JOBS': '${Platform.numberOfProcessors}',
     if (target.os == OS.macOS)
-      'IMAGE_FFMPEG_MACOS_VERSION': '${code.macOS.targetVersion}.0',
+      'IMAGE_FFMPEG_MACOS_VERSION': _appleVersion(code.macOS.deploymentVersion),
     if (target.os == OS.iOS)
-      'IMAGE_FFMPEG_IOS_VERSION': '${code.iOS.targetVersion}.0',
+      'IMAGE_FFMPEG_IOS_VERSION': _appleVersion(code.iOS.deploymentVersion),
     if (target.os == OS.android) ...{
       'IMAGE_FFMPEG_ANDROID_API': '${code.android.targetNdkApi}',
       'ANDROID_NDK_HOME': _androidNdk(),
@@ -280,3 +280,7 @@ String _formatDuration(Duration duration) {
   if (seconds < 60) return '$seconds.${(millis % 1000) ~/ 100}s';
   return '${seconds ~/ 60}m ${seconds % 60}s';
 }
+
+/// An Apple deployment version as clang takes it: `12.0`, or `12.3.1`.
+String _appleVersion(AppleVersion v) =>
+    '${v.major}.${v.minor}${v.patch == 0 ? '' : '.${v.patch}'}';
