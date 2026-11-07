@@ -2,7 +2,7 @@ name: image_ffmpeg
 description: >-
   Image decoding and encoding with a pinned FFmpeg build, the same on every
   platform. Native through FFI, web through WebAssembly.
-version: 0.1.5
+version: 1.0.0
 repository: https://github.com/Telosnex/image_ffmpeg
 issue_tracker: https://github.com/Telosnex/image_ffmpeg/issues
 
@@ -20,7 +20,7 @@ dependencies:
   crypto: ^3.0.6
   ffi: ^2.1.4
   hooks: ^2.2.0
-  kiln: ^0.2.0
+  kiln: ^1.0.0
 
 dev_dependencies:
   ffigen: ^20.1.1
