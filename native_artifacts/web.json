@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "sourceKey": "08b04b83c529717b1f822d0693b6a54ffb9240025825d36e503540c3e0476c30",
-  "release": "https://github.com/Telosnex/image_ffmpeg/releases/tag/native-08b04b83c529717b",
+  "sourceKey": "a800cdcae38c15a4ce7e53eeccfc08d47baf5cb3063538384f71369a9fb091d7",
+  "release": "https://github.com/Telosnex/image_ffmpeg/releases/tag/native-a800cdcae38c15a4",
   "runner": "ubuntu-24.04, emscripten/emsdk@sha256:67df07bc59f86685818fa801d340b54e576fe4276cfd3bcfc4da61d564217737",
   "toolchain": "Emscripten 5.0.0 (a7c5deabd7c88ba1c38ebe988112256775f944c6)",
   "webVersion": "2a240669702381db",
@@ -17,7 +17,7 @@
       "sha256": "9b2d06fe1a5588a4c7e1f3dc8398bbb5fecea45319fcc6566112eecb7e478e5b",
       "bytes": 18974,
       "source": "release",
-      "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-08b04b83c529717b/web-image_ffmpeg_module.mjs.gz",
+      "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-a800cdcae38c15a4/web-image_ffmpeg_module.mjs.gz",
       "downloadSha256": "e5da4a1e96ab49c8f7dc62306930b79b14c2284eaaf55fe0f329f25fd19e8cb4"
     },
     {
@@ -25,7 +25,7 @@
       "sha256": "aaaa8aefde4e88a4d7f5450483dcc34d9d2de67c3fe48b46d9c5624378f4cd06",
       "bytes": 2671141,
       "source": "release",
-      "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-08b04b83c529717b/web-image_ffmpeg_module.wasm.gz",
+      "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-a800cdcae38c15a4/web-image_ffmpeg_module.wasm.gz",
       "downloadSha256": "4a94797952fc574e83d2c6f07743c45a4b92e6135440fff0cf1df8ef60be77bb"
     },
     {
