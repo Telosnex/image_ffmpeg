@@ -29,3 +29,5 @@ tool/verify_artifacts.dart
 tool/verify_native_artifacts.dart
 tool/kiln/test_build.dart
 tool/kiln/test_web.dart
+# Flutter license notices, like LICENSE.
+NOTICES
