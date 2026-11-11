@@ -25,6 +25,12 @@
 #include <libavutil/pixdesc.h>
 #include <libavutil/pixfmt.h>
 #include <libswscale/swscale.h>
+
+// Scaler flags for converting a decoded frame to RGBA. Without
+// SWS_ACCURATE_RND, a same-size conversion takes FFmpeg's unscaled
+// YUV-to-RGB fast path, which converts pixel pairs and does not write the
+// last column of an odd-width frame with subsampled chroma.
+#define IMAGE_FFMPEG_YUV_TO_RGBA_FLAGS (SWS_AREA | SWS_ACCURATE_RND)
 #endif
 
 // This is a portable ABI boundary, not an exposure of FFmpeg's ABI. All AV*
@@ -875,7 +881,7 @@ static int32_t image_ffmpeg_box_average_frame_rgba(
   if (description == NULL) goto cleanup;
   scale_context = sws_getContext(
       frame->width, frame->height, source_format, frame->width, frame->height,
-      AV_PIX_FMT_RGBA, SWS_AREA, NULL, NULL, NULL);
+      AV_PIX_FMT_RGBA, IMAGE_FFMPEG_YUV_TO_RGBA_FLAGS, NULL, NULL, NULL);
   if (scale_context == NULL ||
       (source_full_range &&
        image_ffmpeg_set_source_full_range(scale_context) < 0)) {
@@ -1219,7 +1225,9 @@ static int32_t image_ffmpeg_decode_image_rgba_impl(
     rgba_size = av_image_get_buffer_size(
         AV_PIX_FMT_RGBA, (int)destination_width, (int)destination_height, 1);
     if (rgba_size < 0) goto cleanup;
-    rgba = (uint8_t *)malloc((size_t)rgba_size);
+    // Cleared, so a pixel that the converter does not write is transparent
+    // black, not leftover memory.
+    rgba = (uint8_t *)calloc(1, (size_t)rgba_size);
     if (rgba == NULL) {
       status = IMAGE_FFMPEG_ERROR_OUT_OF_MEMORY;
       goto cleanup;
@@ -1232,7 +1240,8 @@ static int32_t image_ffmpeg_decode_image_rgba_impl(
 
     scale_context = sws_getContext(
         frame->width, frame->height, source_format, (int)destination_width,
-        (int)destination_height, AV_PIX_FMT_RGBA, SWS_AREA, NULL, NULL, NULL);
+        (int)destination_height, AV_PIX_FMT_RGBA,
+        IMAGE_FFMPEG_YUV_TO_RGBA_FLAGS, NULL, NULL, NULL);
     if (scale_context == NULL ||
         (source_full_range &&
          image_ffmpeg_set_source_full_range(scale_context) < 0) ||

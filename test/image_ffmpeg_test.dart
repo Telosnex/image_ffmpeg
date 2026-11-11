@@ -678,6 +678,48 @@ void main() {
     }
   });
 
+  test('decodes the last column of an odd-width 4:2:0 image', () async {
+    // FFmpeg's unscaled YUV-to-RGB converter works on pixel pairs. Without
+    // SWS_ACCURATE_RND it left the last column of an odd width unwritten,
+    // so a full-size decode returned uninitialized memory there.
+    for (final width in const [33, 65, 1365]) {
+      const height = 24;
+      final source = RgbaImage(
+        width: width,
+        height: height,
+        stride: width * 4,
+        bytes: Uint8List.fromList([
+          for (var y = 0; y < height; y++)
+            for (var x = 0; x < width; x++) ...[40, 60 + y, 90, 255],
+        ]),
+      );
+      final jpeg = await ImageFfmpeg.encodeJpeg(source, quality: 95);
+
+      for (var run = 0; run < 3; run++) {
+        final decoded = await ImageFfmpeg.decodeImage(jpeg);
+        final boxed = await ImageFfmpeg.decodeImageBoxAverage(
+          jpeg,
+          maxDimension: width,
+        );
+        for (final (name, image) in [('decode', decoded), ('box', boxed)]) {
+          expect((image.width, image.height), (width, height), reason: name);
+          for (var y = 0; y < height; y++) {
+            final last = y * image.stride + (width - 1) * 4;
+            final before = last - 4;
+            for (var channel = 0; channel < 4; channel++) {
+              expect(
+                (image.bytes[last + channel] - image.bytes[before + channel])
+                    .abs(),
+                lessThanOrEqualTo(3),
+                reason: '$name width=$width y=$y channel=$channel',
+              );
+            }
+          }
+        }
+      }
+    }
+  });
+
   test('validates arguments before entering the backend', () async {
     expect(() => ImageFfmpeg.decodeImage(Uint8List(0)), throwsArgumentError);
     expect(

@@ -1,3 +1,7 @@
+## 1.1.1
+
+- A full-size decode of an odd-width image with subsampled chroma, such as a 4:2:0 JPEG, WebP or AVIF, wrote no last column: it held leftover memory, so random colors and alpha. FFmpeg's fast unscaled YUV-to-RGB path converts pixel pairs; decoding now uses `SWS_ACCURATE_RND`, which avoids that path, and the output buffer starts cleared. Other pixels of these formats can differ slightly from 1.1.0 and are closer to the reference decoders. A full-size decode of such an image takes up to about twice as long; a decode that scales the image is unchanged.
+
 ## 1.1.0
 
 - `ImageFfmpeg.scaleImage` crops RGBA pixels and scales them to an exact size, with a `ScaleFilter`: `area`, `bilinear`, `bicubic` or `lanczos` (the default). Use it for pixels that are already in Dart, such as a `dart:ui` snapshot. The new C export is `image_ffmpeg_scale_rgba`; the ABI version stays 5, since no existing function changed.
