@@ -1843,6 +1843,84 @@ cleanup:
 #endif
 }
 
+IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_scale_rgba(
+    const uint8_t *rgba, uint32_t rgba_length, uint32_t width,
+    uint32_t height, uint32_t stride, uint32_t crop_x, uint32_t crop_y,
+    uint32_t crop_width, uint32_t crop_height, uint32_t output_width,
+    uint32_t output_height, uint32_t filter, image_ffmpeg_image *output) {
+  const uint64_t max_pixels = 100000000;
+  if (output == NULL) return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
+  memset(output, 0, sizeof(*output));
+  if (rgba == NULL || width == 0 || height == 0 || width > INT_MAX ||
+      height > INT_MAX || stride > INT_MAX ||
+      (uint64_t)width * height > max_pixels ||
+      (uint64_t)width * 4u > stride ||
+      (uint64_t)stride * height > rgba_length || output_width == 0 ||
+      output_height == 0 || output_width > INT_MAX / 4 ||
+      output_height > INT_MAX ||
+      (uint64_t)output_width * output_height > max_pixels ||
+      filter > IMAGE_FFMPEG_SCALE_FILTER_LANCZOS) {
+    return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
+  }
+  if (crop_width == 0 && crop_height == 0) {
+    if (crop_x != 0 || crop_y != 0) return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
+    crop_width = width;
+    crop_height = height;
+  }
+  if (crop_width == 0 || crop_height == 0 || crop_x > width ||
+      crop_y > height || crop_width > width - crop_x ||
+      crop_height > height - crop_y) {
+    return IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT;
+  }
+#if defined(IMAGE_FFMPEG_WITH_FFMPEG)
+  image_ffmpeg_prepare_ffmpeg();
+  size_t output_stride = (size_t)output_width * 4u;
+  size_t length = output_stride * output_height;
+  uint8_t *data = (uint8_t *)malloc(length);
+  if (data == NULL) return IMAGE_FFMPEG_ERROR_OUT_OF_MEMORY;
+  const uint8_t *origin =
+      rgba + (size_t)crop_y * stride + (size_t)crop_x * 4u;
+  if (crop_width == output_width && crop_height == output_height) {
+    for (uint32_t row = 0; row < output_height; row++) {
+      memcpy(data + (size_t)row * output_stride,
+             origin + (size_t)row * stride, output_stride);
+    }
+  } else {
+    static const int filters[] = {SWS_AREA, SWS_BILINEAR, SWS_BICUBIC,
+                                  SWS_LANCZOS};
+    // Full-resolution chroma and accurate rounding: without them swscale
+    // halves the horizontal color resolution of packed RGB while it scales.
+    int flags = filters[filter] | SWS_ACCURATE_RND | SWS_FULL_CHR_H_INP |
+                SWS_FULL_CHR_H_INT;
+    struct SwsContext *context = sws_getContext(
+        (int)crop_width, (int)crop_height, AV_PIX_FMT_RGBA, (int)output_width,
+        (int)output_height, AV_PIX_FMT_RGBA, flags, NULL, NULL, NULL);
+    const uint8_t *source_data[4] = {origin, NULL, NULL, NULL};
+    int source_linesize[4] = {(int)stride, 0, 0, 0};
+    uint8_t *destination_data[4] = {data, NULL, NULL, NULL};
+    int destination_linesize[4] = {(int)output_stride, 0, 0, 0};
+    if (context == NULL ||
+        sws_scale(context, source_data, source_linesize, 0, (int)crop_height,
+                  destination_data, destination_linesize) !=
+            (int)output_height) {
+      sws_freeContext(context);
+      free(data);
+      return IMAGE_FFMPEG_ERROR_UNSUPPORTED;
+    }
+    sws_freeContext(context);
+  }
+  output->data = data;
+  output->length = (uint32_t)length;
+  output->width = output_width;
+  output->height = output_height;
+  output->stride = (uint32_t)output_stride;
+  output->pixel_format = IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888;
+  return IMAGE_FFMPEG_OK;
+#else
+  return IMAGE_FFMPEG_ERROR_FFMPEG_NOT_LINKED;
+#endif
+}
+
 IMAGE_FFMPEG_EXPORT void image_ffmpeg_image_release(image_ffmpeg_image *image) {
   if (image == NULL) return;
   free(image->data);

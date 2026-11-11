@@ -159,6 +159,25 @@ final class _WebPoolBackend implements FfmpegBackend {
   }
 
   @override
+  Future<RgbaImage> scaleImage(
+    RgbaImage image, {
+    required ImageCrop? crop,
+    required int width,
+    required int height,
+    required ScaleFilter filter,
+  }) {
+    return _enqueue(
+      (worker) => worker.scaleImage(
+        image,
+        crop: crop,
+        width: width,
+        height: height,
+        filter: filter,
+      ),
+    );
+  }
+
+  @override
   Future<EncodedImage> transcodeImage(
     Uint8List encoded, {
     required ImageOutput output,
@@ -461,6 +480,38 @@ final class _WebWorkerBackend implements FfmpegBackend {
   }
 
   @override
+  Future<RgbaImage> scaleImage(
+    RgbaImage image, {
+    required ImageCrop? crop,
+    required int width,
+    required int height,
+    required ScaleFilter filter,
+  }) async {
+    final buffer = _transferableBuffer(image.bytes);
+    final result = _DecodeResult.wrap(
+      await _request(
+        (id) => _WorkerRequest(
+          id: id,
+          operation: 'scaleImage',
+          bytes: buffer,
+          width: image.width,
+          height: image.height,
+          stride: image.stride,
+          cropX: crop?.x ?? 0,
+          cropY: crop?.y ?? 0,
+          cropWidth: crop?.width ?? 0,
+          cropHeight: crop?.height ?? 0,
+          outputWidth: width,
+          outputHeight: height,
+          filter: filter.wireValue,
+        ),
+        transfer: buffer,
+      ),
+    );
+    return _rgbaImageFromResult(result);
+  }
+
+  @override
   Future<EncodedImage> transcodeImage(
     Uint8List encoded, {
     required ImageOutput output,
@@ -675,6 +726,13 @@ extension type _WorkerRequest._(JSObject _) implements JSObject {
     int chroma,
     int backgroundColor,
     int compressionLevel,
+    int cropX,
+    int cropY,
+    int cropWidth,
+    int cropHeight,
+    int outputWidth,
+    int outputHeight,
+    int filter,
     _TranscodeOptions options,
   });
 }

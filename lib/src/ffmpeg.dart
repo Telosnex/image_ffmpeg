@@ -132,6 +132,35 @@ abstract final class ImageFfmpeg {
     );
   }
 
+  /// Crops RGBA8888 pixels to [crop], or uses the whole image, then scales
+  /// the result to exactly [width] x [height] with [filter].
+  ///
+  /// The output may be larger or smaller than the crop, and its aspect
+  /// ratio may differ. Alpha is not premultiplied, so the colors of
+  /// transparent pixels can bleed into their neighbors.
+  static Future<RgbaImage> scaleImage(
+    RgbaImage image, {
+    required int width,
+    required int height,
+    ImageCrop? crop,
+    ScaleFilter filter = ScaleFilter.lanczos,
+  }) async {
+    _validateEncodeImage(image);
+    if (width <= 0) throw ArgumentError.value(width, 'width');
+    if (height <= 0) throw ArgumentError.value(height, 'height');
+    _validateUint32(width, 'width');
+    _validateUint32(height, 'height');
+    if (crop != null) _validateCrop(crop);
+    final snapshot = _snapshotImage(image);
+    return (await _getBackend()).scaleImage(
+      snapshot,
+      crop: crop,
+      width: width,
+      height: height,
+      filter: filter,
+    );
+  }
+
   /// Decodes the first frame, optionally applies EXIF orientation, crops in
   /// post-orientation coordinates, performs fit-within scaling, and encodes—all
   /// within one native/Wasm call so RGBA pixels do not cross into Dart.
@@ -149,15 +178,7 @@ abstract final class ImageFfmpeg {
     if (maxHeight < 0) throw ArgumentError.value(maxHeight, 'maxHeight');
     _validateUint32(maxWidth, 'maxWidth');
     _validateUint32(maxHeight, 'maxHeight');
-    if (crop != null) {
-      if (crop.x < 0 || crop.y < 0 || crop.width <= 0 || crop.height <= 0) {
-        throw ArgumentError.value(crop, 'crop', 'must have positive geometry');
-      }
-      _validateUint32(crop.x, 'crop.x');
-      _validateUint32(crop.y, 'crop.y');
-      _validateUint32(crop.width, 'crop.width');
-      _validateUint32(crop.height, 'crop.height');
-    }
+    if (crop != null) _validateCrop(crop);
     _validateOutput(output);
     final snapshot = platform.snapshotBytes(bytes);
     return (await _getBackend()).transcodeImage(
@@ -220,6 +241,16 @@ abstract final class ImageFfmpeg {
       throw ArgumentError.value(quality, 'quality', 'must be from 1 to 100');
     }
     _validateUint32(backgroundColor, 'backgroundColor');
+  }
+
+  static void _validateCrop(ImageCrop crop) {
+    if (crop.x < 0 || crop.y < 0 || crop.width <= 0 || crop.height <= 0) {
+      throw ArgumentError.value(crop, 'crop', 'must have positive geometry');
+    }
+    _validateUint32(crop.x, 'crop.x');
+    _validateUint32(crop.y, 'crop.y');
+    _validateUint32(crop.width, 'crop.width');
+    _validateUint32(crop.height, 'crop.height');
   }
 
   static void _validateFillRect(ImageFillRect rectangle) {

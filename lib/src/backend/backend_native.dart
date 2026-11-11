@@ -87,6 +87,17 @@ final class _NativeBackend implements FfmpegBackend {
   );
 
   @override
+  Future<RgbaImage> scaleImage(
+    RgbaImage image, {
+    required ImageCrop? crop,
+    required int width,
+    required int height,
+    required ScaleFilter filter,
+  }) => Isolate.run(
+    () => _scaleOnHelperIsolate(image, crop, width, height, filter),
+  );
+
+  @override
   Future<EncodedImage> transcodeImage(
     Uint8List encoded, {
     required ImageOutput output,
@@ -155,6 +166,41 @@ Uint8List _encodeOnHelperIsolate(
     return Uint8List.fromList(output.ref.data.asTypedList(output.ref.length));
   } finally {
     native.image_ffmpeg_buffer_release(output);
+    calloc.free(output);
+    calloc.free(input);
+  }
+}
+
+RgbaImage _scaleOnHelperIsolate(
+  RgbaImage image,
+  ImageCrop? crop,
+  int width,
+  int height,
+  ScaleFilter filter,
+) {
+  final input = calloc<Uint8>(image.bytes.length);
+  final output = calloc<native.image_ffmpeg_image>();
+  try {
+    input.asTypedList(image.bytes.length).setAll(0, image.bytes);
+    final status = native.image_ffmpeg_scale_rgba(
+      input,
+      image.bytes.length,
+      image.width,
+      image.height,
+      image.stride,
+      crop?.x ?? 0,
+      crop?.y ?? 0,
+      crop?.width ?? 0,
+      crop?.height ?? 0,
+      width,
+      height,
+      filter.wireValue,
+      output,
+    );
+    _throwForStatus(status);
+    return _copyRgbaImage(output.ref);
+  } finally {
+    native.image_ffmpeg_image_release(output);
     calloc.free(output);
     calloc.free(input);
   }

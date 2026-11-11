@@ -51,6 +51,15 @@ final class _UnsupportedBackend implements FfmpegBackend {
   }) => throw const FfmpegException(-5, 'Unsupported platform');
 
   @override
+  Future<RgbaImage> scaleImage(
+    RgbaImage image, {
+    required ImageCrop? crop,
+    required int width,
+    required int height,
+    required ScaleFilter filter,
+  }) => throw const FfmpegException(-5, 'Unsupported platform');
+
+  @override
   Future<EncodedImage> transcodeImage(
     Uint8List encoded, {
     required ImageOutput output,

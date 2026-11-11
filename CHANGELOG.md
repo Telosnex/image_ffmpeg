@@ -1,3 +1,7 @@
+## 1.1.0
+
+- `ImageFfmpeg.scaleImage` crops RGBA pixels and scales them to an exact size, with a `ScaleFilter`: `area`, `bilinear`, `bicubic` or `lanczos` (the default). Use it for pixels that are already in Dart, such as a `dart:ui` snapshot. The new C export is `image_ffmpeg_scale_rgba`; the ABI version stays 5, since no existing function changed.
+
 ## 1.0.0
 
 - First stable release. Requires kiln 1.0.0, whose source key leaves out the pubspec's `version` and `description`, so a release that changes only those needs no new native build.

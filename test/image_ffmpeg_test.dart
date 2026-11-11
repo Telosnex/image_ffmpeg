@@ -28,6 +28,8 @@ void main() {
     expect(ImageOrientation.fromWireValue(7), ImageOrientation.transverse);
     expect(JpegChroma.yuv444.wireValue, 1);
     expect(BoxAverageAlphaMode.opaqueOnly.wireValue, 1);
+    expect(ScaleFilter.area.wireValue, 0);
+    expect(ScaleFilter.lanczos.wireValue, 3);
     expect(() => ImageFormat.fromWireValue(99), throwsArgumentError);
     expect(() => ImageOrientation.fromWireValue(0), throwsArgumentError);
   });
@@ -340,6 +342,133 @@ void main() {
       expect(redBackground.bytes[index + 1], lessThanOrEqualTo(5));
       expect(redBackground.bytes[index + 2], lessThanOrEqualTo(5));
     }
+  });
+
+  group('scaleImage', () {
+    // Left half red, right half blue, with a padded stride.
+    RgbaImage halves(int width, int height) {
+      final stride = width * 4 + 8;
+      final bytes = Uint8List(stride * height);
+      for (var y = 0; y < height; y++) {
+        for (var x = 0; x < width; x++) {
+          bytes.setAll(
+            y * stride + x * 4,
+            x < width ~/ 2 ? [255, 0, 0, 255] : [0, 0, 255, 255],
+          );
+        }
+      }
+      return RgbaImage(
+        width: width,
+        height: height,
+        stride: stride,
+        bytes: bytes,
+      );
+    }
+
+    test('copies a crop of the output size exactly', () async {
+      final source = halves(8, 4);
+      final scaled = await ImageFfmpeg.scaleImage(
+        source,
+        crop: const ImageCrop(x: 2, y: 1, width: 4, height: 2),
+        width: 4,
+        height: 2,
+      );
+      expect((scaled.width, scaled.height, scaled.stride), (4, 2, 16));
+      for (var y = 0; y < 2; y++) {
+        expect(
+          scaled.bytes.sublist(y * 16, y * 16 + 16),
+          source.bytes.sublist(
+            (y + 1) * source.stride + 8,
+            (y + 1) * source.stride + 24,
+          ),
+        );
+      }
+    });
+
+    test('crops before scaling', () async {
+      final scaled = await ImageFfmpeg.scaleImage(
+        halves(64, 64),
+        crop: const ImageCrop(x: 32, y: 0, width: 32, height: 64),
+        width: 5,
+        height: 9,
+        filter: ScaleFilter.area,
+      );
+      expect((scaled.width, scaled.height), (5, 9));
+      for (var i = 0; i < scaled.bytes.length; i += 4) {
+        expect(scaled.bytes.sublist(i, i + 4), [0, 0, 255, 255]);
+      }
+    });
+
+    test('scales to any size with every filter', () async {
+      for (final filter in ScaleFilter.values) {
+        for (final (width, height) in [(3, 7), (100, 30)]) {
+          final scaled = await ImageFfmpeg.scaleImage(
+            halves(40, 20),
+            width: width,
+            height: height,
+            filter: filter,
+          );
+          expect(
+            (scaled.width, scaled.height),
+            (width, height),
+            reason: '$filter',
+          );
+          expect(scaled.bytes.length, width * height * 4);
+          // The far left stays red and the far right blue.
+          expect(scaled.bytes[0], greaterThan(200), reason: '$filter');
+          expect(scaled.bytes[(width - 1) * 4 + 2], greaterThan(200));
+        }
+      }
+    });
+
+    test('averages a fine pattern instead of aliasing it', () async {
+      // One-pixel black and white columns: a large reduction should be gray.
+      const width = 400, height = 40;
+      final bytes = Uint8List(width * height * 4);
+      for (var i = 0; i < width * height; i++) {
+        final v = (i % width).isEven ? 255 : 0;
+        bytes.setAll(i * 4, [v, v, v, 255]);
+      }
+      for (final filter in ScaleFilter.values) {
+        final scaled = await ImageFfmpeg.scaleImage(
+          RgbaImage(
+            width: width,
+            height: height,
+            stride: width * 4,
+            bytes: bytes,
+          ),
+          width: 20,
+          height: 2,
+          filter: filter,
+        );
+        // The filters other than area clamp at the border, so the outer
+        // two cells lean toward their edge column.
+        for (var x = 2; x < 18; x++) {
+          expect(scaled.bytes[x * 4], closeTo(128, 1), reason: '$filter');
+        }
+      }
+    });
+
+    test('rejects invalid geometry', () async {
+      final source = halves(8, 4);
+      expect(
+        () => ImageFfmpeg.scaleImage(source, width: 0, height: 4),
+        throwsArgumentError,
+      );
+      expect(
+        () => ImageFfmpeg.scaleImage(source, width: 4, height: -1),
+        throwsArgumentError,
+      );
+      await expectLater(
+        ImageFfmpeg.scaleImage(
+          source,
+          crop: const ImageCrop(x: 6, y: 0, width: 4, height: 4),
+          width: 4,
+          height: 4,
+        ),
+        throwsA(isA<FfmpegException>()),
+      );
+    });
   });
 
   test('fills a rectangle without crossing an RGBA buffer into Dart', () async {

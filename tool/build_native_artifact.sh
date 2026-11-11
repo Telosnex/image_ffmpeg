@@ -414,6 +414,7 @@ ${prefix}image_ffmpeg_decode_image_rgba_box_average
 ${prefix}image_ffmpeg_encode_jpeg_rgba
 ${prefix}image_ffmpeg_encode_png_rgba
 ${prefix}image_ffmpeg_transcode_image
+${prefix}image_ffmpeg_scale_rgba
 ${prefix}image_ffmpeg_image_release
 ${prefix}image_ffmpeg_buffer_release
 ${prefix}image_ffmpeg_encoded_image_release

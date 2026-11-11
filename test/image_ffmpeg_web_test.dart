@@ -73,6 +73,28 @@ void main() {
     expect(decoded.bytes, image.bytes);
   });
 
+  test('crops and scales RGBA pixels', () async {
+    // Left half red, right half blue.
+    final bytes = Uint8List(64 * 64 * 4);
+    for (var i = 0; i < 64 * 64; i++) {
+      bytes.setAll(i * 4, i % 64 < 32 ? [255, 0, 0, 255] : [0, 0, 255, 255]);
+    }
+    final image = RgbaImage(width: 64, height: 64, stride: 256, bytes: bytes);
+    for (final filter in ScaleFilter.values) {
+      final scaled = await ImageFfmpeg.scaleImage(
+        image,
+        crop: const ImageCrop(x: 32, y: 0, width: 32, height: 64),
+        width: 5,
+        height: 9,
+        filter: filter,
+      );
+      expect((scaled.width, scaled.height, scaled.stride), (5, 9, 20));
+      for (var i = 0; i < scaled.bytes.length; i += 4) {
+        expect(scaled.bytes.sublist(i, i + 4), [0, 0, 255, 255]);
+      }
+    }
+  });
+
   test('encodes JPEG with quality and chroma options', () async {
     final source = await _fetchFixture('test.png');
     final image = await ImageFfmpeg.decodeImage(

@@ -22,4 +22,5 @@ export 'src/models.dart'
         JpegChroma,
         JpegImageOutput,
         PngImageOutput,
-        RgbaImage;
+        RgbaImage,
+        ScaleFilter;

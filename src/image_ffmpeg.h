@@ -67,6 +67,17 @@ typedef enum image_ffmpeg_orientation {
   IMAGE_FFMPEG_ORIENTATION_ROTATE_270 = 8
 } image_ffmpeg_orientation;
 
+// Resampling filter of image_ffmpeg_scale_rgba.
+typedef enum image_ffmpeg_scale_filter {
+  // Averages the source pixels each output pixel covers. Good for large
+  // reductions; softer than Lanczos.
+  IMAGE_FFMPEG_SCALE_FILTER_AREA = 0,
+  IMAGE_FFMPEG_SCALE_FILTER_BILINEAR = 1,
+  IMAGE_FFMPEG_SCALE_FILTER_BICUBIC = 2,
+  // Sharpest. May ring slightly at hard edges.
+  IMAGE_FFMPEG_SCALE_FILTER_LANCZOS = 3
+} image_ffmpeg_scale_filter;
+
 typedef enum image_ffmpeg_jpeg_chroma {
   IMAGE_FFMPEG_JPEG_CHROMA_420 = 0,
   IMAGE_FFMPEG_JPEG_CHROMA_444 = 1
@@ -204,6 +215,26 @@ IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_transcode_image(
     uint32_t input_length,
     const image_ffmpeg_transcode_options *options,
     image_ffmpeg_encoded_image *output);
+
+// Crops RGBA8888 pixels, then scales the crop to exactly output_width x
+// output_height with the filter, an image_ffmpeg_scale_filter. A zero crop
+// width and height use the whole image. The output may be larger or smaller
+// than the crop, and its aspect ratio may differ. Alpha is not premultiplied:
+// the colors of transparent pixels can bleed into their neighbors.
+IMAGE_FFMPEG_EXPORT int32_t image_ffmpeg_scale_rgba(
+    const uint8_t *rgba,
+    uint32_t rgba_length,
+    uint32_t width,
+    uint32_t height,
+    uint32_t stride,
+    uint32_t crop_x,
+    uint32_t crop_y,
+    uint32_t crop_width,
+    uint32_t crop_height,
+    uint32_t output_width,
+    uint32_t output_height,
+    uint32_t filter,
+    image_ffmpeg_image *output);
 
 // Releases output->data and zeroes the struct. Safe on a zeroed image.
 IMAGE_FFMPEG_EXPORT void image_ffmpeg_image_release(image_ffmpeg_image *image);

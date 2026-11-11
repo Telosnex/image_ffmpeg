@@ -38,6 +38,7 @@ const _exportedFunctions = [
   '_image_ffmpeg_decode_image_rgba_box_average',
   '_image_ffmpeg_encode_jpeg_rgba',
   '_image_ffmpeg_encode_png_rgba',
+  '_image_ffmpeg_scale_rgba',
   '_image_ffmpeg_transcode_image',
   '_image_ffmpeg_image_release',
   '_image_ffmpeg_buffer_release',

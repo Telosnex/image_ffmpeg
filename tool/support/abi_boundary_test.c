@@ -195,6 +195,52 @@ int main(int argc, char **argv) {
         IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT);
   check_encoded_zero(&transcoded);
 
+  // Scaling: an exact crop copies; every filter fills the output.
+  image_ffmpeg_image scaled = {0};
+  CHECK(image_ffmpeg_scale_rgba(rgba, sizeof(rgba), width, height, stride, 3, 2,
+                                5, 4, 5, 4, IMAGE_FFMPEG_SCALE_FILTER_LANCZOS,
+                                &scaled) == IMAGE_FFMPEG_OK);
+  CHECK(scaled.width == 5 && scaled.height == 4 && scaled.stride == 20 &&
+        scaled.pixel_format == IMAGE_FFMPEG_PIXEL_FORMAT_RGBA8888);
+  for (uint32_t y = 0; y < 4; y++) {
+    CHECK(memcmp(scaled.data + y * 20, rgba + (y + 2) * stride + 3 * 4, 20) ==
+          0);
+  }
+  image_ffmpeg_image_release(&scaled);
+  for (uint32_t filter = IMAGE_FFMPEG_SCALE_FILTER_AREA;
+       filter <= IMAGE_FFMPEG_SCALE_FILTER_LANCZOS; filter++) {
+    CHECK(image_ffmpeg_scale_rgba(rgba, sizeof(rgba), width, height, stride, 0,
+                                  0, 0, 0, 7, 23, filter, &scaled) ==
+          IMAGE_FFMPEG_OK);
+    CHECK(scaled.width == 7 && scaled.height == 23 && scaled.stride == 28 &&
+          scaled.length == 7 * 23 * 4);
+    image_ffmpeg_image_release(&scaled);
+    check_image_zero(&scaled);
+  }
+  const uint32_t bad_scales[][7] = {
+      // crop x, y, width, height; output width, height; filter
+      {0, 0, 0, 0, 0, 4, 0},          {0, 0, 0, 0, 4, 0, 0},
+      {0, 0, 0, 0, 4, 4, 4},          {1, 0, 0, 0, 4, 4, 0},
+      {0, 0, 1, 0, 4, 4, 0},          {0, 0, width + 1, 1, 4, 4, 0},
+      {width, 0, 1, 1, 4, 4, 0},      {0, height - 1, 1, 2, 4, 4, 0},
+      {0, 0, 0, 0, 0x40000000u, 1, 0}, {0, 0, 0, 0, 20000, 20000, 0},
+  };
+  for (size_t index = 0; index < sizeof(bad_scales) / sizeof(bad_scales[0]);
+       index++) {
+    const uint32_t *bad = bad_scales[index];
+    memset(&scaled, 0xa5, sizeof(scaled));
+    CHECK(image_ffmpeg_scale_rgba(rgba, sizeof(rgba), width, height, stride,
+                                  bad[0], bad[1], bad[2], bad[3], bad[4],
+                                  bad[5], bad[6], &scaled) ==
+          IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT);
+    check_image_zero(&scaled);
+  }
+  memset(&scaled, 0xa5, sizeof(scaled));
+  CHECK(image_ffmpeg_scale_rgba(rgba, sizeof(rgba) - 1, width, height, stride,
+                                0, 0, 0, 0, 4, 4, 0, &scaled) ==
+        IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT);
+  check_image_zero(&scaled);
+
   uint32_t state = 0xc001d00du;
   uint8_t tiny[64];
   memset(tiny, 0x5a, sizeof(tiny));
@@ -210,6 +256,15 @@ int main(int argc, char **argv) {
           IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT);
     check_buffer_zero(&output);
     image_ffmpeg_buffer_release(&output);
+    image_ffmpeg_image scaled_output;
+    memset(&scaled_output, 0xa5, sizeof(scaled_output));
+    CHECK(image_ffmpeg_scale_rgba(tiny, sizeof(tiny), hostile_width,
+                                  hostile_height, hostile_stride, 0, 0, 0, 0,
+                                  1 + fuzz_next(&state) % 64,
+                                  1 + fuzz_next(&state) % 64,
+                                  fuzz_next(&state) % 4, &scaled_output) ==
+          IMAGE_FFMPEG_ERROR_INVALID_ARGUMENT);
+    check_image_zero(&scaled_output);
   }
 
   for (int iteration = 0; iteration < option_cases; iteration++) {

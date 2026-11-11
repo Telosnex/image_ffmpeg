@@ -29,6 +29,14 @@ abstract interface class FfmpegBackend {
 
   Future<Uint8List> encodePng(RgbaImage image, {required int compressionLevel});
 
+  Future<RgbaImage> scaleImage(
+    RgbaImage image, {
+    required ImageCrop? crop,
+    required int width,
+    required int height,
+    required ScaleFilter filter,
+  });
+
   Future<EncodedImage> transcodeImage(
     Uint8List encoded, {
     required ImageOutput output,

@@ -9,6 +9,7 @@ EXPORTS
   image_ffmpeg_encode_jpeg_rgba
   image_ffmpeg_encode_png_rgba
   image_ffmpeg_transcode_image
+  image_ffmpeg_scale_rgba
   image_ffmpeg_image_release
   image_ffmpeg_buffer_release
   image_ffmpeg_encoded_image_release

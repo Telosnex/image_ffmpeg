@@ -52,11 +52,12 @@ external int image_ffmpeg_decode_image_rgba(
   ffi.Pointer<image_ffmpeg_image> output,
 );
 
-/// Decodes the first frame at full resolution, then fits it within a square and
-/// folds every source pixel into exactly one destination cell using integer-only
-/// box averaging. Decode and fold remain inside native/Wasm memory, so only the
-/// small deterministic RGBA result crosses the language boundary. The result is
-/// never upscaled and max_dimension must be nonzero.
+/// Decodes the first frame at full resolution and folds completed RGBA rows
+/// immediately into integer-only destination cells. POSIX native targets
+/// discard completed scratch pages, avoiding a resident full-resolution RGBA
+/// intermediate while preserving byte-identical full-frame color conversion.
+/// Only the small deterministic result crosses the language boundary. The result
+/// is never upscaled and max_dimension must be nonzero.
 @ffi.Native<
   ffi.Int32 Function(
     ffi.Pointer<ffi.Uint8>,
@@ -141,6 +142,44 @@ external int image_ffmpeg_transcode_image(
   int input_length,
   ffi.Pointer<image_ffmpeg_transcode_options> options,
   ffi.Pointer<image_ffmpeg_encoded_image> output,
+);
+
+/// Crops RGBA8888 pixels, then scales the crop to exactly output_width x
+/// output_height with the filter, an image_ffmpeg_scale_filter. A zero crop
+/// width and height use the whole image. The output may be larger or smaller
+/// than the crop, and its aspect ratio may differ. Alpha is not premultiplied:
+/// the colors of transparent pixels can bleed into their neighbors.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Uint32,
+    ffi.Pointer<image_ffmpeg_image>,
+  )
+>()
+external int image_ffmpeg_scale_rgba(
+  ffi.Pointer<ffi.Uint8> rgba,
+  int rgba_length,
+  int width,
+  int height,
+  int stride,
+  int crop_x,
+  int crop_y,
+  int crop_width,
+  int crop_height,
+  int output_width,
+  int output_height,
+  int filter,
+  ffi.Pointer<image_ffmpeg_image> output,
 );
 
 /// Releases output->data and zeroes the struct. Safe on a zeroed image.
@@ -279,6 +318,31 @@ enum image_ffmpeg_orientation {
     8 => IMAGE_FFMPEG_ORIENTATION_ROTATE_270,
     _ => throw ArgumentError(
       'Unknown value for image_ffmpeg_orientation: $value',
+    ),
+  };
+}
+
+/// Resampling filter of image_ffmpeg_scale_rgba.
+enum image_ffmpeg_scale_filter {
+  /// Averages the source pixels each output pixel covers. Good for large
+  /// reductions; softer than Lanczos.
+  IMAGE_FFMPEG_SCALE_FILTER_AREA(0),
+  IMAGE_FFMPEG_SCALE_FILTER_BILINEAR(1),
+  IMAGE_FFMPEG_SCALE_FILTER_BICUBIC(2),
+
+  /// Sharpest. May ring slightly at hard edges.
+  IMAGE_FFMPEG_SCALE_FILTER_LANCZOS(3);
+
+  final int value;
+  const image_ffmpeg_scale_filter(this.value);
+
+  static image_ffmpeg_scale_filter fromValue(int value) => switch (value) {
+    0 => IMAGE_FFMPEG_SCALE_FILTER_AREA,
+    1 => IMAGE_FFMPEG_SCALE_FILTER_BILINEAR,
+    2 => IMAGE_FFMPEG_SCALE_FILTER_BICUBIC,
+    3 => IMAGE_FFMPEG_SCALE_FILTER_LANCZOS,
+    _ => throw ArgumentError(
+      'Unknown value for image_ffmpeg_scale_filter: $value',
     ),
   };
 }

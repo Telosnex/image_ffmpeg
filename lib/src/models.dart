@@ -116,6 +116,22 @@ enum JpegChroma {
   final int wireValue;
 }
 
+/// The resampling filter of [ImageFfmpeg.scaleImage].
+enum ScaleFilter {
+  /// Averages the source pixels each output pixel covers. Good for large
+  /// reductions; softer than [lanczos].
+  area(0),
+  bilinear(1),
+  bicubic(2),
+
+  /// The sharpest. May ring slightly at hard edges.
+  lanczos(3);
+
+  const ScaleFilter(this.wireValue);
+
+  final int wireValue;
+}
+
 /// How deterministic box averaging handles source alpha.
 enum BoxAverageAlphaMode {
   /// Average red, green, blue, and alpha from every source pixel.

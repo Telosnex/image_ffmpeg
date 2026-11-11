@@ -47,6 +47,15 @@ final jpeg = await ImageFfmpeg.encodeJpeg(
 );
 final png = await ImageFfmpeg.encodePng(image, compressionLevel: 9);
 
+// Crop RGBA pixels and scale them to an exact size.
+final scaled = await ImageFfmpeg.scaleImage(
+  image,
+  crop: const ImageCrop(x: 0, y: 40, width: 640, height: 960),
+  width: 320,
+  height: 480,
+  filter: ScaleFilter.lanczos,
+);
+
 // Keep the decoded RGBA intermediate inside native/Wasm memory.
 final thumbnail = await ImageFfmpeg.transcodeImage(
   arbitraryBytes,
@@ -99,6 +108,11 @@ one additional coarse call. `transcodeImage` fuses first-frame decode, EXIF
 orientation, crop, fit-within scaling, and encode, so a potentially large RGBA
 intermediate never crosses the FFI/Wasm boundary. That minimizes both calls and
 memory traffic.
+
+`scaleImage` takes RGBA pixels that are already in Dart, such as a
+`dart:ui` snapshot, crops them, and scales the crop to an exact size with
+FFmpeg's area, bilinear, bicubic, or Lanczos filter. The decode methods
+always scale with the area filter.
 
 `fillRectangle` fuses decode, an in-place solid RGBA fill, and JPEG/PNG encode.
 It is intended for high-frequency screenshot masking where transferring a full
