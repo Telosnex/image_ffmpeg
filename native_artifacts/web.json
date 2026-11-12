@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "sourceKey": "500423859f0e78696a47986a062c66ad32e95326f88cedbe612511f010e44774",
-  "release": "https://github.com/Telosnex/image_ffmpeg/releases/tag/native-500423859f0e7869",
+  "sourceKey": "b5224b52c7212f04276eb8971ea92f9d04618e305d555503c0855689b88ffa62",
+  "release": "https://github.com/Telosnex/image_ffmpeg/releases/tag/native-b5224b52c7212f04",
   "runner": "ubuntu-24.04, emscripten/emsdk@sha256:67df07bc59f86685818fa801d340b54e576fe4276cfd3bcfc4da61d564217737",
   "toolchain": "Emscripten 5.0.0 (a7c5deabd7c88ba1c38ebe988112256775f944c6)",
-  "webVersion": "ac3a557667c437c0",
+  "webVersion": "980436f72e81b856",
   "files": [
     {
       "name": "image_ffmpeg_loader.mjs",
@@ -17,16 +17,16 @@
       "sha256": "f366e055edfa9b77c9b7e140a6b89c0974da3bcea10c7f67a50e0b4d42762a5d",
       "bytes": 19076,
       "source": "release",
-      "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-500423859f0e7869/web-image_ffmpeg_module.mjs.gz",
+      "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/web-image_ffmpeg_module.mjs.gz",
       "downloadSha256": "ed91cd69cb647d1a1266ab54092e0d5cd88a32943037a8d3086aa21c1ceb9d99"
     },
     {
       "name": "image_ffmpeg_module.wasm",
-      "sha256": "576cb67a9c2f6a4b22504c2c1a00bf33c487e345319e85dafcab63d3456eae35",
-      "bytes": 2671875,
+      "sha256": "f6b554137c4352d16d677c6e62dcb310cae06862684348446ab773b63912c885",
+      "bytes": 2671882,
       "source": "release",
-      "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-500423859f0e7869/web-image_ffmpeg_module.wasm.gz",
-      "downloadSha256": "edec2a267aa591574721aad6e4b00e50baab4a91341d3f922731fab874c71e2e"
+      "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/web-image_ffmpeg_module.wasm.gz",
+      "downloadSha256": "27ad84f7b4a8c41910ce3a16c55ef4c6b8568c53e440588834c9f80c5016ce25"
     },
     {
       "name": "image_ffmpeg_worker.mjs",
