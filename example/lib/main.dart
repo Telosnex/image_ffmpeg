@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:image_ffmpeg/image_ffmpeg.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() => runApp(const ExampleApp());
 
