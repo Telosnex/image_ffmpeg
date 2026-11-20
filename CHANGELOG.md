@@ -1,3 +1,7 @@
+## 1.1.3
+
+- Update FFmpeg from 9.0.2 to 9.1. It adds bounds and overflow checks to AVIF and HEIF parsing, fixes an overflow in the TIFF/DNG tile count, and reports out-of-order APNG chunks. The native libraries are rebuilt for every platform and the web.
+
 ## 1.1.2
 
 - Flutter 3.50 compatability
