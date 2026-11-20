@@ -32,6 +32,9 @@ jobs:
       # The package: the example is a Flutter app (dart pub get --no-example).
       - run: dart analyze --fatal-infos lib test tool
       - run: dart run tool/verify_artifacts.dart
+      # Authenticated: anonymous GitHub API calls share a small rate limit.
       - run: dart run kiln:check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - run: dart run tool/update_browser_corpus_manifest.dart --check
       - run: dart test -r expanded
