@@ -5,7 +5,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 # hook/build.dart sets IMAGE_FFMPEG_THIRD_PARTY to a directory outside the
 # package.
 third_party="${IMAGE_FFMPEG_THIRD_PARTY:-$root/third_party}"
-ffmpeg_commit=946fcce07b6dcd0331c8cc609192aeff5e1924f8
+ffmpeg_commit=74e4393595cf2b5857f0da925c4e0dd74ea306e5
 aom_commit=b141d9c45db236335351c8a4b2a14b3ade27c937
 zlib_commit=99623ef7097352da7993ba614161fd6a311e046e
 
