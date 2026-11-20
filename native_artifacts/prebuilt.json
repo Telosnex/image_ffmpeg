@@ -1,93 +1,93 @@
 {
   "schema": 1,
-  "sourceKey": "b5224b52c7212f04276eb8971ea92f9d04618e305d555503c0855689b88ffa62",
-  "release": "https://github.com/Telosnex/image_ffmpeg/releases/tag/native-b5224b52c7212f04",
+  "sourceKey": "99f65f25c6e834e25e48bcbcb17f9af1b179fbec31c2f444496e021e851611e2",
+  "release": "https://github.com/Telosnex/image_ffmpeg/releases/tag/native-99f65f25c6e834e2",
   "targets": {
     "android-arm": {
-      "runner": "ubuntu22 20261101.347.1",
+      "runner": "ubuntu22 20261116.365.1",
       "toolchain": "Android NDK 28.2.13676358, cmake version 3.31.6",
       "minOSVersion": 24,
       "files": [
         {
           "name": "libimage_ffmpeg.so",
-          "sha256": "34a358bd309302b5e009a5293941039c77bafd1d03a63efe2912fd3f1d524951",
-          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/android-arm-libimage_ffmpeg.so.gz",
-          "downloadSha256": "52dff04d4d77d6269b80eb02402ef2805c834293cf672428367a0e6b70d92972",
+          "sha256": "7d3d03507dc90aa083b0a3a4078ef4337ad38c5c5547c75fb291d2d266ce3414",
+          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-99f65f25c6e834e2/android-arm-libimage_ffmpeg.so.gz",
+          "downloadSha256": "a04b2fb9ce62678e59c06a3d8dba45ac0bda5a1a0ee88de781c2ba0acbf86b62",
           "delivery": "bundle",
           "asset": "image_ffmpeg_bindings_generated.dart"
         }
       ]
     },
     "android-arm64": {
-      "runner": "ubuntu22 20261101.347.1",
+      "runner": "ubuntu22 20261116.365.1",
       "toolchain": "Android NDK 28.2.13676358, cmake version 3.31.6",
       "minOSVersion": 24,
       "files": [
         {
           "name": "libimage_ffmpeg.so",
-          "sha256": "38158ba5df08b4a206d9762c005c9d4a1862d94748ad61876ffda3aecf2d8ae3",
-          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/android-arm64-libimage_ffmpeg.so.gz",
-          "downloadSha256": "a3e77f36679547a45ec019039555420514a45cc7d545406ae15f8cee8b97efe5",
+          "sha256": "2402a34c9dfa43d083472a782096114c13fbee8128f5d481a762928262894a6f",
+          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-99f65f25c6e834e2/android-arm64-libimage_ffmpeg.so.gz",
+          "downloadSha256": "b8c01373d6e48a78cfb1812b3f9399b53b4db6d62f87cd355753c22fe28c1a31",
           "delivery": "bundle",
           "asset": "image_ffmpeg_bindings_generated.dart"
         }
       ]
     },
     "android-x64": {
-      "runner": "ubuntu22 20261101.347.1",
+      "runner": "ubuntu22 20261116.365.1",
       "toolchain": "Android NDK 28.2.13676358, cmake version 3.31.6",
       "minOSVersion": 24,
       "files": [
         {
           "name": "libimage_ffmpeg.so",
-          "sha256": "630051e6c2dab491201ae008f2c6d88c6dea189f6c30483e1a61d317a09d8f05",
-          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/android-x64-libimage_ffmpeg.so.gz",
-          "downloadSha256": "989f9e9c62a5e95e60f5bf48a44507258ec51df7d3c0fac3c543fbd144f3a86c",
+          "sha256": "71573e7f2882b5c3a196e35105d55e3cea464af6f02086940b4256ac77950d8c",
+          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-99f65f25c6e834e2/android-x64-libimage_ffmpeg.so.gz",
+          "downloadSha256": "2bd9d9ca6bb3c616036db6c0302471b8c4a3f051d2ed0f9e78756906a4b1d60a",
           "delivery": "bundle",
           "asset": "image_ffmpeg_bindings_generated.dart"
         }
       ]
     },
     "ios-arm64-iphoneos": {
-      "runner": "macos15 20261104.0514.1",
-      "toolchain": "Xcode 16.4, cmake version 4.4.5",
+      "runner": "macos15 20261118.0550.1",
+      "toolchain": "Xcode 16.4, cmake version 4.5.0",
       "minOSVersion": 13,
       "files": [
         {
           "name": "libimage_ffmpeg.dylib",
-          "sha256": "c5ef0f73313607f97dd92eb30c9c2b5a335e5da94ca909d14c7272399c2d5ecd",
-          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/ios-arm64-iphoneos-libimage_ffmpeg.dylib.gz",
-          "downloadSha256": "9010149ff8e7ee3a0e659465081ca361d06e4cd22b2010bd8c00f8678a959d0e",
+          "sha256": "2889ba6370f03e8904da21ca620b97939c5e27834e020d123eee688c9ce62b48",
+          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-99f65f25c6e834e2/ios-arm64-iphoneos-libimage_ffmpeg.dylib.gz",
+          "downloadSha256": "8e614a2c61d7d8b60808b0ec0a648f63167bea808751cb5ba1e596a386258a1d",
           "delivery": "bundle",
           "asset": "image_ffmpeg_bindings_generated.dart"
         }
       ]
     },
     "ios-arm64-iphonesimulator": {
-      "runner": "macos15 20261104.0514.1",
-      "toolchain": "Xcode 16.4, cmake version 4.4.5",
+      "runner": "macos15 20261118.0550.1",
+      "toolchain": "Xcode 16.4, cmake version 4.5.0",
       "minOSVersion": 13,
       "files": [
         {
           "name": "libimage_ffmpeg.dylib",
-          "sha256": "0408bdbe4ea29e21f330b387c12a4b806ba9a50eba5af07b7dc3b94b3266d1fd",
-          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/ios-arm64-iphonesimulator-libimage_ffmpeg.dylib.gz",
-          "downloadSha256": "d94d68c9bebc6164eb1229b3a6388dbe590e32b35035656082f35e15458cdc9b",
+          "sha256": "134f9009a6f0e5c380581cee97a6134fc85ff2bb2befca66609715d60072b545",
+          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-99f65f25c6e834e2/ios-arm64-iphonesimulator-libimage_ffmpeg.dylib.gz",
+          "downloadSha256": "dc20b42db1725f76bb6a2bc028f95f074a8a71d99ff5ba31fc9c5181e2b97eae",
           "delivery": "bundle",
           "asset": "image_ffmpeg_bindings_generated.dart"
         }
       ]
     },
     "ios-x64-iphonesimulator": {
-      "runner": "macos15 20261104.0514.1",
-      "toolchain": "Xcode 16.4, cmake version 4.4.5",
+      "runner": "macos15 20261118.0550.1",
+      "toolchain": "Xcode 16.4, cmake version 4.5.0",
       "minOSVersion": 13,
       "files": [
         {
           "name": "libimage_ffmpeg.dylib",
-          "sha256": "6935dbd07ab727eafd9cb5846828654a88f3d234e61ffde182e3cbf2c39f2682",
-          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/ios-x64-iphonesimulator-libimage_ffmpeg.dylib.gz",
-          "downloadSha256": "41628384895ba4885a159c83538036a51199bcf3444a570eac1142c08733ed40",
+          "sha256": "a7927ff40745d2b2ef8057a2e3fe12928bebd4d9f1c9799648d453eb50ddb541",
+          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-99f65f25c6e834e2/ios-x64-iphonesimulator-libimage_ffmpeg.dylib.gz",
+          "downloadSha256": "91f052f406655d50dffa07c9468e279a486001464974e7f863a6fd98789f2b4e",
           "delivery": "bundle",
           "asset": "image_ffmpeg_bindings_generated.dart"
         }
@@ -99,9 +99,9 @@
       "files": [
         {
           "name": "libimage_ffmpeg.so",
-          "sha256": "86ab443b5879a9d068a1a784b44fb620f0bb934783ffe52732450f3b2949fb2f",
-          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/linux-arm64-libimage_ffmpeg.so.gz",
-          "downloadSha256": "fe8bb14a7ba4701fa7e7b682c9fb104e514038867f6f653e2f42eb0b94cb6770",
+          "sha256": "3c25afa78095e5da0a608a0da76cf14bb95ca85cb6a712e1f4714fb3b73a4ffa",
+          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-99f65f25c6e834e2/linux-arm64-libimage_ffmpeg.so.gz",
+          "downloadSha256": "3f3f5251173940b3399a4c7f75c830b70c0798f33498064f2e9cc2fc5ca67d55",
           "delivery": "bundle",
           "asset": "image_ffmpeg_bindings_generated.dart"
         }
@@ -113,39 +113,39 @@
       "files": [
         {
           "name": "libimage_ffmpeg.so",
-          "sha256": "013042ce1ae7f73737c101f339e6e5832bfdba7b95db157efe3576d7a11f0d67",
-          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/linux-x64-libimage_ffmpeg.so.gz",
-          "downloadSha256": "dc1479d946cc9e2903de9028a939e801040f240bc9f36c17050c3d6723d3b9f8",
+          "sha256": "efd44d7d38d8b731a224be23b0683faceb16d6ea394e4fbf4de5e123919664c1",
+          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-99f65f25c6e834e2/linux-x64-libimage_ffmpeg.so.gz",
+          "downloadSha256": "bc224e31d5274c2334394f1d7fc7669763d0bfe47ad1acbc120c7a7ade014baf",
           "delivery": "bundle",
           "asset": "image_ffmpeg_bindings_generated.dart"
         }
       ]
     },
     "macos-arm64": {
-      "runner": "macos15 20261104.0514.1",
-      "toolchain": "Xcode 16.4, cmake version 4.4.5",
+      "runner": "macos15 20261118.0550.1",
+      "toolchain": "Xcode 16.4, cmake version 4.5.0",
       "minOSVersion": 12,
       "files": [
         {
           "name": "libimage_ffmpeg.dylib",
-          "sha256": "87623f0b8d5c42e1b745272ea5223af73951601ad2d5cb323c253cfcdcd8c4d3",
-          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/macos-arm64-libimage_ffmpeg.dylib.gz",
-          "downloadSha256": "0dafb1536e82c1c2108b741357d2fb855cdd3df5bfec1ed2369dda58e0a9d35f",
+          "sha256": "754b2a959d0e9b7b083d4c6cf63cb93bfa4080e148eb347bafed8c6f7223339d",
+          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-99f65f25c6e834e2/macos-arm64-libimage_ffmpeg.dylib.gz",
+          "downloadSha256": "71259e816380d9d6ece1a84c0538d65e85266e2489ec7d985ef63b8f7b7be554",
           "delivery": "bundle",
           "asset": "image_ffmpeg_bindings_generated.dart"
         }
       ]
     },
     "macos-x64": {
-      "runner": "macos15 20261104.0514.1",
-      "toolchain": "Xcode 16.4, cmake version 4.4.5",
+      "runner": "macos15 20261118.0550.1",
+      "toolchain": "Xcode 16.4, cmake version 4.5.0",
       "minOSVersion": 12,
       "files": [
         {
           "name": "libimage_ffmpeg.dylib",
-          "sha256": "5536e99268f63e1cd45a62beaf29de7334e6a91a128474de35e01257e7d7a0f5",
-          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/macos-x64-libimage_ffmpeg.dylib.gz",
-          "downloadSha256": "4a44d2dceba96e227f156d3328ba1ef7103885c5340088b0d2e54b67a8ac724a",
+          "sha256": "e976fed46994321ba19ffc289570aeca09671d762878d624755a12316dc23bc9",
+          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-99f65f25c6e834e2/macos-x64-libimage_ffmpeg.dylib.gz",
+          "downloadSha256": "8c49bf151069a47b8fecf73540fd43b2a587e3759fcbdb5cecc53e91102c54ec",
           "delivery": "bundle",
           "asset": "image_ffmpeg_bindings_generated.dart"
         }
@@ -157,9 +157,9 @@
       "files": [
         {
           "name": "image_ffmpeg.dll",
-          "sha256": "d91830d591842b3723a71e7075b5b01edf2d5798667bbab44d258aee831173ba",
-          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/windows-arm64-image_ffmpeg.dll.gz",
-          "downloadSha256": "a71dfee98b773fb20f2c68e8496eeec267f815d9eafc9c2b8b2b44000e07d0f5",
+          "sha256": "7a639aa542c658bc0e478cc3be83c4b6703579c8b070beb2f018c06bf0daa995",
+          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-99f65f25c6e834e2/windows-arm64-image_ffmpeg.dll.gz",
+          "downloadSha256": "611c49a3bdb042c95c3ae121915733b71a16a1058f4c45dfcb44ead33618ea82",
           "delivery": "bundle",
           "asset": "image_ffmpeg_bindings_generated.dart"
         }
@@ -171,9 +171,9 @@
       "files": [
         {
           "name": "image_ffmpeg.dll",
-          "sha256": "d14d7cb825cf5d4e1784cfe63330dbf901159111747300fe245229c4a0d2cf08",
-          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-b5224b52c7212f04/windows-x64-image_ffmpeg.dll.gz",
-          "downloadSha256": "2e325f90a117df7e1cd93980e25d6e7f40d637ec1447b44119dbdca1be0e533d",
+          "sha256": "79fc5c4e958746bc962da6f73bf3575d0beddb0bc02ec25ca3a37ca7dd020b58",
+          "url": "https://github.com/Telosnex/image_ffmpeg/releases/download/native-99f65f25c6e834e2/windows-x64-image_ffmpeg.dll.gz",
+          "downloadSha256": "9e59cbbe602bfc17a5f382078020322864ff279096d8f0754a4c2d1d402742e4",
           "delivery": "bundle",
           "asset": "image_ffmpeg_bindings_generated.dart"
         }

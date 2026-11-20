@@ -2,6 +2,7 @@
 # (telosnex_ci_tools, lib/src/upstream.dart). Set `seen` to skip an update.
 # Patch releases alert: these decoders read untrusted images.
 sources:
+  # Follow the peeled release commit in the fetch script.
   - name: FFmpeg/FFmpeg
     tags: https://github.com/FFmpeg/FFmpeg.git
     version: 'n(\d+(?:\.\d+)*)'

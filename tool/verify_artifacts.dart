@@ -8,7 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 
 const _expectedSources = {
-  'ffmpeg': '946fcce07b6dcd0331c8cc609192aeff5e1924f8',
+  'ffmpeg': '74e4393595cf2b5857f0da925c4e0dd74ea306e5',
   'libaom': 'b141d9c45db236335351c8a4b2a14b3ade27c937',
   'zlib': '99623ef7097352da7993ba614161fd6a311e046e',
 };

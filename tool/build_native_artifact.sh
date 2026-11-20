@@ -4,7 +4,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 target="${1:-}"
 
-ffmpeg_commit=946fcce07b6dcd0331c8cc609192aeff5e1924f8
+ffmpeg_commit=74e4393595cf2b5857f0da925c4e0dd74ea306e5
 aom_commit=b141d9c45db236335351c8a4b2a14b3ade27c937
 zlib_commit=99623ef7097352da7993ba614161fd6a311e046e
 profile_version=9
@@ -368,7 +368,9 @@ if [[ ! -f "$aom_build/.image_ffmpeg_complete" ]]; then
   touch "$aom_build/.image_ffmpeg_complete"
 fi
 
-if [[ ! -f "$ffmpeg_build/.image_ffmpeg_complete" ]]; then
+# The direct build directory is reused across FFmpeg pin updates.
+ffmpeg_complete="$ffmpeg_build/.image_ffmpeg_complete-$ffmpeg_commit"
+if [[ ! -f "$ffmpeg_complete" ]]; then
   rm -rf "$ffmpeg_build"
   mkdir -p "$ffmpeg_build"
   export AOM_PREFIX="$aom_prefix"
@@ -398,7 +400,7 @@ if [[ ! -f "$ffmpeg_build/.image_ffmpeg_complete" ]]; then
       libavutil/libavutil.a libswscale/libswscale.a
     make install-libs install-headers
   )
-  touch "$ffmpeg_build/.image_ffmpeg_complete"
+  touch "$ffmpeg_complete"
 fi
 
 mkdir -p "$artifact_directory"

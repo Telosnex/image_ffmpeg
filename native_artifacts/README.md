@@ -14,7 +14,7 @@ release with `dart run kiln:check`.
 
 ## Source pins
 
-- FFmpeg `946fcce07b6dcd0331c8cc609192aeff5e1924f8` (`n9.0.2`)
+- FFmpeg `74e4393595cf2b5857f0da925c4e0dd74ea306e5` (`n9.1`)
 - libaom `b141d9c45db236335351c8a4b2a14b3ade27c937` (`v3.15.3`)
 - zlib `99623ef7097352da7993ba614161fd6a311e046e` (`v1.4`)
 - native/Web build profile `9`
@@ -24,7 +24,7 @@ libswscale functionality needed by the image shim. It disables programs,
 networking, devices, filters, assembly, runtime CPU detection, GPL and nonfree
 components. libaom is decoder-only for AVIF. zlib supplies PNG compression.
 Both are statically included. Profile 9 enables FFmpeg's native animated-WebP
-demuxer/decoder and its required VP8 decoder from the official `n9.0.2` release.
+demuxer/decoder and its required VP8 decoder from the official `n9.1` release.
 Every build requires the exact peeled release commit above.
 
 Libraries expose only the versioned `image_ffmpeg_*` shim ABI. Upstream symbols
